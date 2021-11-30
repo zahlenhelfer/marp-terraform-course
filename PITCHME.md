@@ -1,36 +1,47 @@
 ---
 marp: true
-title: Marp CLI example
-description: Hosting Marp slide deck on the web
-theme: uncover
+
+title: Terraform with AWS Slidedeck
+description: An example slide deck created by Marp CLI
+author: Marcus Ross
+keywords: terraform,aws,iac
+url: https://marp.app/
+image: https://marp.app/og-image.jpg
 paginate: true
-_paginate: false
+backgroundImage: url('https://marp.app/assets/hero-background.jpg')
+footer: '(c) Marcus Ross - Terraform V 1.0'
+#theme: gaia
+#color: #000
+#colorSecondary: #333
+#backgroundColor: #fff
+#header: '**bold** _italic_'
+#footer: '(c) Marcus Ross - Terraform V 1.0![image](https://example.com/image.jpg)'
 ---
 
-![bg](./assets/gradient.jpg)
+<!-- _paginate: false -->
+<!-- _class: lead -->
 
-# <!--fit--> Marp CLI example
+# <!-- fit --> Terraform with AWS
 
-Hosting Marp slide deck on the web
+### Hosted by Marcus Ross Ver. 1.0.2
 
-https://github.com/yhatt/marp-cli-example
-
-<style scoped>a { color: #eee; }</style>
-
-<!-- This is presenter note. You can write down notes through HTML comment. -->
+**Topics:** Variables/Datatypes, Operations on Variables, and Conditional Statements/Expressions
 
 ---
 
-![Marp bg 60%](https://raw.githubusercontent.com/marp-team/marp/master/marp.png)
+# Course Details
+
+We have two sessions (days) to cover the agenda.
+
+- Session 1 @ 9AM Terraform Fundamentals and AWS Core Services
+- Session 2 @ 9AM Terraform Advanded and more AWS Services
 
 ---
 
-![bg](#123)
-![](#fff)
+# Goals of the Course
 
-##### <!--fit--> [Marp CLI](https://github.com/marp-team/marp-cli) + [GitHub Pages](https://github.com/pages) | [Netlify](https://www.netlify.com/) | [Vercel](https://vercel.com/)
-
-##### <!--fit--> 👉 The easiest way to host<br />your Marp deck on the web
+- Provide extra help and assistance to be successful in the course through practice problems.
+- Provide a safe environment to work on problems with others. Coding can be a very solitary activity, but not here.
 
 ---
 
@@ -44,32 +55,85 @@ https://github.com/yhatt/marp-cli-example
 
 ---
 
-![bg right 60%](https://icongr.am/simple/netlify.svg?colored)
+![bg left 60%](https://icongr.am/octicons/mark-github.svg)
 
-## **[Netlify](https://www.netlify.com/)**
-
-#### Ready to write & host your deck!
-
-[![Deploy to Netlify h:1.5em](./assets/netlify-deploy-button.svg)](https://app.netlify.com/start/deploy?repository=https://github.com/yhatt/marp-cli-example)
-
----
-
-![bg right 60%](https://icongr.am/simple/zeit.svg)
-
-## **[Vercel](https://vercel.com/)**
+## **[GitHub Pages](https://github.com/pages)**
 
 #### Ready to write & host your deck!
 
-[![Deploy to Vercel h:1.5em](https://vercel.com/button)](https://vercel.com/import/project?template=https://github.com/yhatt/marp-cli-example)
+[![Use this as template h:1.5em](https://img.shields.io/badge/-Use%20this%20as%20template-brightgreen?style=for-the-badge&logo=github)](https://github.com/yhatt/marp-cli-example/generate)
 
 ---
 
-### <!--fit--> :ok_hand:
+![bg center 60%](https://icongr.am/octicons/mark-github.svg)
+
+## **[GitHub Pages](https://github.com/pages)**
+
+#### Ready to write & host your deck!
+
+[![Use this as template h:1.5em](https://img.shields.io/badge/-Use%20this%20as%20template-brightgreen?style=for-the-badge&logo=github)](https://github.com/yhatt/marp-cli-example/generate)
 
 ---
 
-![bg 40% opacity blur](https://avatars1.githubusercontent.com/u/3993388?v=4)
+# What are variables?
 
-### Created by Yuki Hattori ([@yhatt](https://github.com/yhatt))
+Variables are buckets that store data. Variable declarations looks like this:
 
-https://github.com/yhatt/marp-cli-example
+```java
+<datatype> <variable name>; // Initializing <variable name>
+<variable name> = <value>; // Assigning <variable name>
+
+// Is equivalant to:
+<datatype> <variable name> = <value>; // Initializing and assigning <variable_name>
+```
+
+Here are some examples of variable declarations.
+
+```java
+int myAge = 23; // <datatype> is int (integer)
+double pi = 3.14; // <datatype> is double (decimal)
+boolean programmingIsAwesome;
+programmingIsAwesome = true; // <datatype> is boolean (true/false)
+char bestLetter = 'J'; // <datatype> is char (a letter)
+```
+
+## Questions before practice?
+
+---
+
+# Agenda Day 1
+
+- Install Terraform & First Example (EC2-HelloWorld)
+
+  - Why IaC, Terraform in general
+  - Terraform Syntax Essentials
+
+- Terraform with AWS
+  - Create IAM Users
+  - Create a VPC
+  - Create EC2 Instances
+
+---
+
+# Agenda Day 2
+
+- S3
+  - Create S3-Buckets
+  - Host WebSites with S3-Buckets
+  - Host Remote State with S3-Buckets
+- Route 53 to create a friendly DNS Entry
+- RDS
+  - Deploy a PostgresDB
+  - Deploy a Aurora-ServerlessDB
+- EKS
+  - Deploy an EKS-Cluster
+  - Deploy an NGINX-POD
+- Wordpress End-2-End Example
+
+---
+
+# Install Terraform
+
+## Subtitle
+
+Lorem ipsum dolor sit amet, consectetur adipiscing elit.
