@@ -9,7 +9,7 @@ keywords: terraform,aws,iac
 #image: https://marp.app/og-image.jpg
 paginate: true
 #backgroundImage: url('assets/hero-background.jpg')
-footer: '(c) Marcus Ross - Terraform V 1.0'
+footer: '(c) 2021 - Terraform with AWS V 1.0'
 #theme: uncover
 #color: #000
 #colorSecondary: #333
@@ -43,42 +43,6 @@ We have two sessions (days) to cover the agenda.
 - use Terrafrom to deploy some Infrastructure
 - Hands-On Time
 - getting a refresh on AWS services
-
----
-
-# Agenda Day 1
-
-- Install Terraform and AWS-Connection
-- Why IaC / Terraform in general
-- First Example (EC2-HelloWorld)
-- Syntax Essentials and Best Practices
-  - Core Developer Loop
-  - Variables
-  - Essential Functions
-  - File-Layout
-  - Dependencies
-- Terraform with AWS
-  - Create EC2-Instances
-  - Create S3 Buckets
-  - Create a VPC
-
----
-
-# Agenda Day 2
-
-- Host WebSites with S3-Buckets
-- Create EC2-Cluster and a Load-Balancer
-- S3
-  - Host Remote State with S3-Buckets
-- Route 53 to create a friendly DNS Entry
-- IAM Users and Policies
-- RDS
-  - Deploy a PostgresDB
-  - Deploy a Aurora-ServerlessDB
-- EKS
-  - Deploy an EKS-Cluster
-  - Deploy an NGINX-POD
-- Wordpress End-2-End Example
 
 ---
 
@@ -275,9 +239,9 @@ crash.log
 | File / Folder | Purpose                          |
 | ------------- | -------------------------------- |
 | main.tf       | Terraform Config and Constraints |
-| output.tf     | Output like IPs, Addresses, etc  |
-| provider.tf   | Provider-Specific (Cred.)        |
-| ressources.tf | for small projects               |
+| outputs.tf    | Output like IPs, Addresses, etc  |
+| providers.tf  | Provider-Specific (Cred.)        |
+| resources.tf  | for small projects               |
 | variables.tf  | place for specifying variables   |
 | README.md     | Documentation                    |
 | env           | folder place for tfvar-files     |
@@ -361,13 +325,13 @@ resource "aws_instance" "app_server" {
 using a validation block nested within the variable block
 
 ```json
-variable "image_id" {
+variable "image-id" {
   type        = string
   description = "The id of the machine image (AMI) to use for the server."
 
   validation {
     condition     = length(var.image_id) > 4 && substr(var.image_id, 0, 4) == "ami-"
-    error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
+    error_message = "Image-id value must be a valid ami id, does it start with 'ami-'?"
   }
 }
 ```
@@ -379,14 +343,14 @@ variable "image_id" {
 you can even use regex for this
 
 ```json
-variable "image_id" {
+variable "image-id" {
   type        = string
   description = "The id of the machine image (AMI) to use for the server."
 
   validation {
     # regex(...) fails if it cannot find a match
     condition     = can(regex("^ami-", var.image_id))
-    error_message = "The image_id value must be a valid AMI id, starting with \"ami-\"."
+    error_message = "Image-id value must be a valid ami id, does it start with 'ami-'?"
   }
 }
 ```
@@ -455,7 +419,7 @@ user  = var.user_names[count.index]
 
 ## use Variables & Functions II
 
-- create variable `region` and set default to 'eu-central-1'
+- create variable `region` and set default to **eu-central-1**
 - change variable type `ami_id` to `map`
 
 ![bg right 100%](assets/programming-code.jpg)
@@ -477,7 +441,8 @@ somemap = {
 }
 ```
 
-`$ terraform apply -var-file=env/development.tfvars`
+Linux: `$ terraform apply -var-file=env/development.tfvars`
+Windows: `$ terraform apply --var-file=env/development.tfvars`
 
 ---
 
@@ -501,7 +466,7 @@ somemap = {
 # use of environment variables
 
 you can also supply values to your variables by using environment variables
-Terraform will automatically read all environment variables with the `TF*VAR*` prefix
+Terraform will automatically read all environment variables with the `TF_VAR_` prefix
 
 ##### Example variable.tf
 
@@ -516,6 +481,20 @@ set the value (Linux)
 
 set the value (PowerShell)
 `$env:TF_VAR_db_password=Secret123`
+
+---
+
+# use Variables on the Command Line
+
+To specify individual variables on the command line, use the `-var` option when running the terraform plan and terraform apply commands:
+
+```bash
+$ terraform apply -var="db_engine"="mysql"
+
+$ terraform apply -var='user_names_list=["Peter","Paul","Marry"]
+
+$ terraform apply -var='image_id_map={"us-east-1":"ami-abc123","us-east-2":"ami-def456"}
+```
 
 ---
 
@@ -555,13 +534,130 @@ Example with a region-default value if not set:
 
 ---
 
+# Declaring an Output Value
+
+Each output block that will be declared is exported after each `apply`:
+
+What is the difference and when we use a) or b):
+
+a)
+
+```json
+output "app_server_ip_addr" {
+  value = aws_instance.app_server.*.public_ip
+}
+```
+
+b)
+
+```json
+output "app_server_ip_addr" {
+  value = aws_instance.app_server.public_ip
+}
+```
+
+---
+
+# terraform output on the commandline
+
+You can use `terraform output` to get the latest info **from** the **state-file**
+
+Output everything variable:
+
+```bash
+$ terraform output
+app_server_public_ip = [
+  "18.192.194.218",
+]
+```
+
+output as JSON Object with [jq](https://stedolan.github.io/jq/)-parsing
+
+```bash
+$ terraform output -json app_server_public_ip | jq -r '.[0]'
+```
+
+---
+
+# Sensitive Variables
+
+Setting a variable as `sensitive` prevents Terraform from showing its value in the plan or apply output.
+
+Terraform will still record sensitive values in the **statefile**, and so anyone who can access the state data will have access to the sensitive values in cleartext.
+
+```json
+variable admin_password {
+  type      = string
+  sensitive = true
+}
+```
+
+use Tools like:
+[Vault](https://learn.hashicorp.com/tutorials/terraform/secrets-vault?in=terraform/secrets) / [AWS Secrets Mgmt.](https://aws.amazon.com/secrets-manager/pricing/) / [Mozilla SOPS](https://github.com/mozilla/sops)
+
+---
+
 # more functions and dynamic blocks
+
+---
+
+# using a more then one Tag for each Instance
+
+```json
+variable "common_tags" {
+  type = map(string)
+  default = {
+    Department  = "Global Infrastructure Services",
+    Team        = "EMEA Delivery",
+    CostCenter  = "12345",
+    Application = "Intranet-Portal"
+  }
+}
+```
+
+---
+
+# use of a map with common tags
+
+#### use it just as a variable:
+
+```json
+resource "aws_instance" "app_server" {
+  ...omitted output...
+  tags = var.common_tags
+  ...omitted output...
+}
+```
+
+#### use it with the merge()-function
+
+```json
+  tags = merge(var.default_tags, {
+    Name = "AppSrv-${count.index + 1}"
+    },
+  )
+```
+
+---
+
+# LAB
+
+## use some common_tags
+
+- create a map-variable
+  `var.common_tags`
+- set the tags:
+  CostCenter = "12345"
+  DeployedBy = "Terraform"
+  SLA = "High"
+
+![bg right 100%](assets/programming-code.jpg)
 
 ---
 
 # Install a Webserver
 
-Usually we can use SSH Access to install manually or use something like Ansible. Here we will use the startup-hook `user_data` from an EC2-Ressource.
+Usually we can use SSH Access to install software manually or use something like Ansible. Here we will use the clout-init-hook `user_data` from an EC2-Ressource.
 
 ```
 user_data = << EOF
@@ -582,7 +678,7 @@ we can use the file-function to dynamically load **local** files during deployme
 
 ##### Example install_webserver.sh
 
-```
+```bash
 #!/bin/bash
 yum install httpd -y
 /sbin/chkconfig --levels 235 httpd on
@@ -594,7 +690,7 @@ echo "<h1>$instanceId from $region</h1>" > /var/www/html/index.html
 
 ##### Example main.tf in ressource ec2-instance
 
-```
+```json
 user_data = "${file("install_webserver.sh")}"
 ```
 
@@ -613,9 +709,9 @@ user_data = "${file("install_webserver.sh")}"
 
 ---
 
-# Create Security Groups and Rule Objects
+# Create Security Groups- and Rule-Objects
 
-```
+```json
 resource "aws_security_group" "web_access" {
   name        = "web_access"
   description = "Allow port 80 access from outside world"
@@ -633,13 +729,13 @@ resource "aws_security_group_rule" "allow_webserver_access" {
 
 ---
 
-### Use Security Groups
+### Use Security Groups as one ressource with blocks
 
-```
+```json
 resource "aws_security_group" "ssh_access" {
   name        = "web_security_group"
   description = "Terraform web security group"
-  vpc_id      = vpc-47111266642
+  vpc_id      = "vpc-47111266642"
 
   egress {
     from_port   = 0
@@ -680,7 +776,7 @@ Within top-level block constructs like resources, expressions can usually be use
 
 ### Create Security Groups with dynamic blocks (simple)
 
-```
+```json
 locals {
   ports = [80, 443, 22]
 }
@@ -706,7 +802,7 @@ resource "aws_security_group" "dynamic-demo" {
 
 ### Create Security Groups with dynamic blocks (with maps)
 
-```
+```json
 locals {
   map = {
     "description 0" = {
@@ -822,6 +918,17 @@ data "aws_subnet_ids" "private" {
 
 ---
 
+# LAB
+
+## use a datasource
+
+- create a datasource to query the newest Amazon Linux 2 AMI
+- create an ec2-instance and use the AMI dynamically
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
 # Datasource **template_file** 1/2
 
 The template_file data source renders a template from a template string, which is usually loaded from an external file.
@@ -859,17 +966,6 @@ resource "aws_instance" "webserver" {
   ...
 }
 ```
-
----
-
-# LAB
-
-## use a datasource
-
-- create a datasource to query the newest Amazon Linux 2 AMI
-- create an ec2-instance and use this AMI dynamically
-
-![bg right 100%](assets/programming-code.jpg)
 
 ---
 
@@ -921,7 +1017,7 @@ resource "aws_instance" "app_server" {
 # Terraform Graph Visualization
 
 - Dot-Files are Text-Based
-- Use Graphviz to visualize
+- Use [Graphviz](https://graphviz.org/) to visualize
 - Possible output
   - Several pixel images
   - SVG
@@ -1009,6 +1105,31 @@ resource "aws_s3_bucket_object" "video_upload_object" {
 - upload a file to it
 
 ![bg right 100%](assets/programming-code.jpg)
+
+---
+
+# use S3 lifecycle
+
+```json
+resource "aws_s3_bucket" "bucket" {
+  bucket = "terraform-20181219040316452900000001"
+  acl = "private"
+
+  lifecycle_rule {
+    enabled = true
+    transition {
+      days = 30
+      storage_class = "STANDARD_IA"
+    }
+    transition {
+      days = 60
+      storage_class = "GLACIER"
+    }
+  }
+}
+```
+
+after 30 days move the objects to `STANDARD_IA` and after 60 days to `GLACIER`.
 
 ---
 
@@ -1295,10 +1416,6 @@ resource "aws_db_instance" "rds_mysql" {
 
 ---
 
-# Serverless Aurora (PostgresDB)
-
----
-
 # LAB
 
 ## Setup a MySQQL RDS
@@ -1306,7 +1423,7 @@ resource "aws_db_instance" "rds_mysql" {
 - create a mysql database
 - create a security-group
 - create acess to public
-- test the access via db-client
+- test the access via db-client (optional)
 
 ![bg right 100%](assets/programming-code.jpg)
 
@@ -1315,6 +1432,95 @@ resource "aws_db_instance" "rds_mysql" {
 # Terraform an Route53
 
 ---
+
+# use of the Route 53 Resource
+
+```json
+resource "aws_route53_record" "tf-alb-record" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "tf-alb.${var.route53_hosted_zone_name}"
+  type    = "A"
+  alias {
+    name                   = aws_alb.alb.dns_name
+    zone_id                = aws_alb.alb.zone_id
+    evaluate_target_health = true
+  }
+}
+```
+
+---
+
+# How to obtain hosted zone information
+
+#### you can create a hosted zone (not usual)
+
+```json
+resource "aws_route53_zone" "my-test-zone" {
+  name = "example.com"
+
+  vpc {
+    vpc_id = "${var.vpc_id}"
+  }
+}
+```
+
+#### you can use a datasource here to finde pre-deployed information
+
+```json
+data "aws_route53_zone" "zone" {
+  name = "tf.itc.cgi-north.de"
+}
+```
+
+---
+
+# Isolating State Files
+
+With a remote backend and locking, collaboration is no longer a problem. However, there is still one more problem remaining: **isolation**.
+
+## Isolate State via workspaces!
+
+`$ terraform workspace show`
+`$ terraform workspace new prod`
+`$ terraform workspace new qa`
+`$ terraform workspace list`
+`$ terraform workspace select prod`
+
+---
+
+# setup a simple example
+
+```json
+resource "aws_instance" "example" {
+  ami = "ami-0c55b159cbfafe1f0"
+  instance_type = "t2.micro"
+}
+
+terraform {
+  backend "s3" {
+    # Replace this with your bucket name!
+    bucket         = "tf-demo-state-42"
+    key            = "workspaces-example/terraform.tfstate"
+    region         = "eu-central-1"
+
+    # Replace this with your DynamoDB table name!
+    dynamodb_table = "tf-demo-locks"
+    encrypt        = true
+  }
+}
+```
+
+---
+
+# LAB
+
+## Setup workspaces
+
+- create a simple ressource
+- create a remote backend
+- configure two different workspaces
+
+![bg right 100%](assets/programming-code.jpg)
 
 ---
 
@@ -1326,15 +1532,79 @@ resource "aws_db_instance" "rds_mysql" {
 
 ---
 
-# Application-Loadbalancer Ressource
+# Classic-Loadbalancer Ressource (simple)
 
+```json
+resource "aws_elb" "elb-appserver" {
+  name               = "elb-appserver"
+  availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  instances          = aws_instance.app_server.*.id
+  security_groups    = [aws_security_group.elb-appserver-sg.id]
+
+  listener {
+    instance_port     = 80
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+
+  tags = {
+    Name = "terraform-elb"
+  }
+}
 ```
 
+---
+
+# Application-Loadbalancer Ressource
+
+```json
+resource "aws_alb" "alb" {
+  name            = "terraform-example-alb"
+  security_groups = [aws_security_group.alb.id]
+  subnets         = ["subnet-04c352b2400a7c891",
+                     "subnet-0d752b61d8c0072d6",
+                     "subnet-0b516a2ea3f89bdf4"]
+}
+```
+
+```json
+resource "aws_alb_listener" "listener_http" {
+  load_balancer_arn = aws_alb.alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+  default_action {
+    target_group_arn = aws_alb_target_group.web-group.arn
+    type             = "forward"
+  }
+}
 ```
 
 ---
 
 # Target-Group
+
+```json
+resource "aws_alb_target_group" "web-group" {
+  name     = "terraform-example-alb-target"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+  health_check {
+    path = "/"
+    port = 80
+  }
+}
+```
+
+```json
+resource "aws_lb_target_group_attachment" "alb-attachment" {
+  count            = var.node_count
+  target_group_arn = aws_alb_target_group.web-group.arn
+  target_id        = aws_instance.webserver-instance[count.index].id
+  port             = 80
+}
+```
 
 ---
 
@@ -1360,20 +1630,14 @@ resource "aws_autoscaling_group" "autoscaling_group" {
 
 # LAB
 
-## create an alb-cluster with scaling via asg
+## create an alb + webserver cluster
 
 - create 2 webserver replicas with metadata-instace-id
-- create an autoscaling-group
-  (min 2 / max 5)
 - add ingress-rule for port 80 open to the world
 - create an internet-facing alb with target-groups
-- add a DNS-Entry for the ALB (studentXX.tf.training.de)
+- add a DNS-Entry for the ALB
 
 ![bg right 100%](assets/programming-code.jpg)
-
----
-
-# Elastic Kubernetes Service
 
 ---
 
