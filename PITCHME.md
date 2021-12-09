@@ -9,7 +9,7 @@ keywords: terraform,aws,iac
 #image: https://marp.app/og-image.jpg
 paginate: true
 #backgroundImage: url('assets/hero-background.jpg')
-footer: '(c) 2021 - Terraform with AWS V 1.0'
+footer: '(c) 2021 - Terraform with AWS V 1.0.4'
 #theme: uncover
 #color: #000
 #colorSecondary: #333
@@ -21,11 +21,11 @@ footer: '(c) 2021 - Terraform with AWS V 1.0'
 <!-- _paginate: false -->
 <!-- _class: lead -->
 
-# <!-- fit --> Terraform with AWS
+# <!-- fit --> Terraform 1.0 with AWS
 
 ### Hosted by Marcus Ross for CGI
 
-**Version:** 1.0.3
+**Version:** 1.0.4
 
 ---
 
@@ -252,10 +252,10 @@ crash.log
 
 ## please refactor your code
 
-- add `provider.tf` and refactor
-- add `ressource.tf` and refactor
+- add `providers.tf` and refactor
+- add `ressources.tf` and refactor
 - create empty file `variables.tf`
-- create empty file `output.tf`
+- create empty file `outputs.tf`
 - create an `env` folder
 
 ## ![bg right 100%](assets/programming-code.jpg)
@@ -377,7 +377,7 @@ A Map is a lookup table, where you specify multiple keys with different values
 ```json
 # define a map of images
 variable "images" {
-  type = "map"
+  type = map(string)
 
   default = {
     eu-central-1 = "image-1234"
@@ -401,7 +401,7 @@ A list value is an ordered sequence of strings indexed by integers starting with
 ```json
 # define a map of images
 variable "user_names" {
-  type = "list(String)"
+  type = "list(string)"
   default = ["Admin", "Jane", "Dane"]
 }
 
@@ -468,7 +468,7 @@ Windows: `$ terraform apply --var-file=env/development.tfvars`
 you can also supply values to your variables by using environment variables
 Terraform will automatically read all environment variables with the `TF_VAR_` prefix
 
-##### Example variable.tf
+##### Example variables.tf
 
 ```
 variable db_password {
@@ -583,14 +583,43 @@ $ terraform output -json app_server_public_ip | jq -r '.[0]'
 
 Setting a variable as `sensitive` prevents Terraform from showing its value in the plan or apply output.
 
-Terraform will still record sensitive values in the **statefile**, and so anyone who can access the state data will have access to the sensitive values in cleartext.
-
 ```json
 variable admin_password {
   type      = string
   sensitive = true
 }
 ```
+
+`$ terraform apply -var=admin_password="Geheim123"`
+
+---
+
+# Sensitive Data and Output-Variables
+
+try the difference of using sensitive on the output definition
+
+```json
+output "db_admin_password" {
+  description = "Admin Password"
+  value       = var.admin_password
+}
+```
+
+```json
+output "db_admin_password" {
+  description = "Admin Password"
+  value       = var.admin_password
+  sensitive   = true
+}
+```
+
+---
+
+# sensitive is **NOT** enough
+
+Terraform will still record sensitive values in the **statefile**, and so anyone who can access the state data will have access to the sensitive values in cleartext.
+
+`$ grep -2 "password" terraform.tfstate`
 
 use Tools like:
 [Vault](https://learn.hashicorp.com/tutorials/terraform/secrets-vault?in=terraform/secrets) / [AWS Secrets Mgmt.](https://aws.amazon.com/secrets-manager/pricing/) / [Mozilla SOPS](https://github.com/mozilla/sops)
@@ -607,9 +636,9 @@ use Tools like:
 variable "common_tags" {
   type = map(string)
   default = {
-    Department  = "Global Infrastructure Services",
-    Team        = "EMEA Delivery",
-    CostCenter  = "12345",
+    Department  = "Global Infrastructure Services"
+    Team        = "EMEA Delivery"
+    CostCenter  = "12345"
     Application = "Intranet-Portal"
   }
 }
@@ -632,9 +661,9 @@ resource "aws_instance" "app_server" {
 #### use it with the merge()-function
 
 ```json
-  tags = merge(var.default_tags, {
+  tags = merge(var.common_tags, {
     Name = "AppSrv-${count.index + 1}"
-    },
+    }
   )
 ```
 
@@ -691,7 +720,7 @@ echo "<h1>$instanceId from $region</h1>" > /var/www/html/index.html
 ##### Example main.tf in ressource ec2-instance
 
 ```json
-user_data = "${file("install_webserver.sh")}"
+user_data = file("install_webserver.sh")
 ```
 
 ---
@@ -723,7 +752,7 @@ resource "aws_security_group_rule" "allow_webserver_access" {
   to_port           = 80
   protocol          = "tcp"
   cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.webdata.id
+  security_group_id = aws_security_group.web_access.id
 }
 ```
 
@@ -777,7 +806,7 @@ Within top-level block constructs like resources, expressions can usually be use
 ### Create Security Groups with dynamic blocks (simple)
 
 ```json
-locals {
+local {
   ports = [80, 443, 22]
 }
 
@@ -870,7 +899,7 @@ data "aws_ami" "amazon-linux-2" {
 
   filter {
     name   = "name"
-    values = ["amzn2-ami-hvm-*-x86_64-ebs"]
+    values = ["amzn2-ami-hvm-*-x86_64-gp2"]
   }
 }
 ```
@@ -886,7 +915,7 @@ This resource can prove useful when a module accepts a vpc id as an input variab
 ```json
 data "aws_vpc" "selected" {
   tags = {
-    Owner = "Terraform",
+    Owner = "Terraform"
     Name  = "terraform-example-vpc"
   }
 }
@@ -973,16 +1002,6 @@ resource "aws_instance" "webserver" {
 
 ---
 
-# Understand Dependency Graphs
-
-Terraform doesn't simply build resources and write configuration into a state file
-Internally, it also manages a dependency graph of all the resources
-For dependencies, a directed graph is necessary
-
-![100%](assets/dep-graph.png)
-
----
-
 # Dependency Graphs in Terraform
 
 - Terraform uses dependency graphs to determine the build and deletion order of resources
@@ -991,17 +1010,19 @@ For dependencies, a directed graph is necessary
   - Provider configuration node
   - Resource meta-node
 
+![80%](assets/dep-graph.png)
+
 ---
 
-# Controlling dependencies with depends_on
+# Controlling dependencies with [depends_on](https://www.terraform.io/docs/language/meta-arguments/depends_on.html)
 
-- Usually, Terraform will resolve dependencies automatically
+- Terraform will resolve dependencies automatically
 - Sometimes built-in dependency resolution leads to to unwanted behavior
 - Enforce dependencies: `depends_on`
   - Accepts a list of resources that this resource depends on
   - Resource won't be created until the ones listed inside this parameter are created
 
-```
+```json
 resource "aws_instance" "app_server" {
   ami             = var.ami_id
   instance_type   = var.instance_type
@@ -1219,7 +1240,7 @@ resource "aws_s3_bucket_object" "html_object" {
 
 ---
 
-# Use a random-Provider for **unique** Buckets
+# Use a [random](https://registry.terraform.io/providers/hashicorp/random/latest/docs)-Provider for **unique** Buckets
 
 define the random-provider (provider.tf)
 
@@ -1231,8 +1252,7 @@ provider "random" {
 create a random-ressource (rand.tf)
 
 ```json
-resource "random_id" "s3-random-id" {
-  byte_length = 4
+resource "random_uuid" "s3_random_id" {
 }
 ```
 
@@ -1240,7 +1260,7 @@ use the random-ressource with a bucket (s3.tf)
 
 ```json
 resource "aws_s3_bucket" "bucket" {
-  bucket = "${var.s3_bucket_name}-${random_id.s3-random-id.dec}"
+  bucket = "${var.s3_bucket_name}-${random_id.s3_random_id.result}"
 }
 ```
 
@@ -1257,6 +1277,62 @@ resource "aws_s3_bucket" "bucket" {
 
 ---
 
+# Terraform and DNS
+
+---
+
+# The Route53 Record [Resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record)
+
+```json
+resource "aws_route53_record" "tf-alb-record" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "tf-alb.${var.route53_hosted_zone_name}"
+  type    = "A"
+  alias {
+    name                   = aws_alb.alb.dns_name
+    zone_id                = aws_alb.alb.zone_id
+    evaluate_target_health = true
+  }
+}
+```
+
+---
+
+# How to obtain hosted zone information
+
+#### you can create a new hosted zone (not usual)
+
+```json
+resource "aws_route53_zone" "my-test-zone" {
+  name = "example.com"
+  vpc {
+    vpc_id = "${var.vpc_id}"
+  }
+}
+```
+
+#### you can use a datasource here to finde pre-deployed information
+
+```json
+data "aws_route53_zone" "zone" {
+  name = "aws.zhtraining.de"
+}
+```
+
+---
+
+# LAB
+
+## use Route53 (DNS)
+
+- use hosted zone info
+- create a friendly dns entry for the static s3-bucket
+- try that on your browser
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
 # Remote State File
 
 - Stores the state at a key in a bucket on S3
@@ -1266,13 +1342,13 @@ resource "aws_s3_bucket" "bucket" {
 
 ---
 
-# Remote State Configuration with S3 & DynamoDB
+# Backend Configuration with [S3](https://www.terraform.io/docs/language/settings/backends/s3.html) & DynamoDB
 
 ```json
 terraform {
   backend "s3" {
     bucket         = "s3-terraform-backend"
-    key            = "frontend-app/terraform.tfstate"
+    key            = "example-app/terraform.tfstate"
     region         = "eu-central-1"
     encrypt        = true
     dynamodb_table = "terraform-state-lock-dynamo"
@@ -1285,7 +1361,7 @@ To start the initialization/migration use:
 
 ---
 
-# bootstrap state-ressources (optional)
+# bootstrap the backend-resources (optional)
 
 ```json
 resource "aws_s3_bucket" "s3-state" {
@@ -1310,25 +1386,64 @@ resource "aws_dynamodb_table" "dynamodb-terraform-state-lock" {
 
 ---
 
+# LAB
+
+## Setup remote state
+
+- create a s3-bucket
+- create a dynamodb-table with LockID
+- configure the s3-backend in terrafrom
+- Test it :)
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
+# Workspaces
+
+With a remote backend and locking, collaboration is no longer a problem.
+![100%](assets/tf-workspaces.png)
+[Source](https://medium.com/devops-mojo/terraform-workspaces-overview-what-is-terraform-workspace-introduction-getting-started-519848392724)
+
+---
+
+# Isolating State Files
+
+However, there is still one more problem remaining: **isolation**.
+
+### Isolate State via [workspaces](https://www.terraform.io/docs/language/state/workspaces.html)
+
+`$ terraform workspace show`
+`$ terraform workspace new production`
+`$ terrafrom apply -var-file=env/production.tf`
+`$ terraform workspace new development`
+`$ terrafrom apply -var-file=env/development.tf`
+`$ terraform workspace list`
+`$ terraform workspace select production`
+
+---
+
+# LAB
+
+## manage workspaces
+
+- create a remote backend (opt.)
+- configure two different workspaces
+  - production
+  - development
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
 ![right 10%](assets/vpc-logo.png)
 
-# AWS Virtual Privat Cloud
+# Virtual Privat Cloud
 
 - A VPC is a virtual network dedicated to your AWS account
 - Requires an IPv4 address space and optionally IPv6 address ranges
 - Enables you to create specific CIDR ranges for your resources to occupy
 - Provides strict access rules for inbound and outbound traffic.
-
----
-
-# Multi-VPC per Account
-
-### Best suited for:
-
-- single team or single organizations, such as managed service providers
-- limited teams, which makes it easier to maintain standards and manage access
-
-![80%](assets/multi-vpc.png)
 
 ---
 
@@ -1347,20 +1462,60 @@ resource "aws_dynamodb_table" "dynamodb-terraform-state-lock" {
 
 ---
 
+# Multi-VPC per Account
+
+### Best suited for:
+
+- single team or single organizations, such as managed service providers
+- limited teams, which makes it easier to maintain standards and manage access
+
+![80%](assets/multi-vpc.png)
+
+---
+
 # LAB
 
-## Setup your VPC (hard-way)
+## create a VPC (hard-way)
 
 - create a VPC in eu-central-1
-- create a public Subnet for one AZ
+- create one public Subnet for one AZ
 - create an Internet-GW
 - create a Route Table
+- deploy a test-ec2 instance
 
 ![bg right 100%](assets/programming-code.jpg)
 
 ---
 
-# use the power of modules
+# Terraform an Modules
+
+---
+
+# the power of modules
+
+A module is a container for multiple resources that are used together. Modules can be used to create lightweight abstractions, so that you can describe your infrastructure in terms of its architecture.
+
+![bg right 80%](assets/lego-stack.jpg)
+
+---
+
+# [vpc-module]() example
+
+```json
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "3.7.0"
+
+  name = "my-vpc"
+  cidr = "10.0.0.0/16"
+  azs             = ["${var.region}a", "${var.region}b", "${var.region}c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  enable_vpn_gateway = false
+}
+```
+
+and don´t forget to `$ terraform init`
 
 ---
 
@@ -1368,8 +1523,8 @@ resource "aws_dynamodb_table" "dynamodb-terraform-state-lock" {
 
 ## Setup your VPC (Module-Support)
 
-- create a VPC in eu-central-1
-- create 3 public Subnets for 3 AZ
+- create a VPC in `eu-central-1`
+- create three public & privat Subnets with each AZ
 - create an Internet-GW
 - create a Route Table
 
@@ -1377,150 +1532,7 @@ resource "aws_dynamodb_table" "dynamodb-terraform-state-lock" {
 
 ---
 
-# Terraform and Application Load Balancer
-
----
-
-# possible HA-Solution
-
-- EC2-Instance´s / EKS / ELB
-- Webserver Installation
-- AutoScaling Group
-- Application Load Balancer
-
----
-
-# Terraform and RDS
-
----
-
-# MySQL RDS Example
-
-```json
-resource "aws_db_instance" "rds_mysql" {
-  allocated_storage      = 20
-  max_allocated_storage  = 100
-  storage_type           = "gp2"
-  engine                 = "mysql"
-  engine_version         = "5.7"
-  instance_class         = var.db_instance_type
-  name                   = var.db_name
-  username               = var.db_user
-  password               = var.db_password
-  parameter_group_name   = "default.mysql5.7"
-  skip_final_snapshot    = true
-  vpc_security_group_ids = [aws_security_group.mysql-access.id]
-  publicly_accessible    = true
-}
-```
-
----
-
-# LAB
-
-## Setup a MySQQL RDS
-
-- create a mysql database
-- create a security-group
-- create acess to public
-- test the access via db-client (optional)
-
-![bg right 100%](assets/programming-code.jpg)
-
----
-
-# Terraform an Route53
-
----
-
-# use of the Route 53 Resource
-
-```json
-resource "aws_route53_record" "tf-alb-record" {
-  zone_id = data.aws_route53_zone.zone.zone_id
-  name    = "tf-alb.${var.route53_hosted_zone_name}"
-  type    = "A"
-  alias {
-    name                   = aws_alb.alb.dns_name
-    zone_id                = aws_alb.alb.zone_id
-    evaluate_target_health = true
-  }
-}
-```
-
----
-
-# How to obtain hosted zone information
-
-#### you can create a hosted zone (not usual)
-
-```json
-resource "aws_route53_zone" "my-test-zone" {
-  name = "example.com"
-
-  vpc {
-    vpc_id = "${var.vpc_id}"
-  }
-}
-```
-
-#### you can use a datasource here to finde pre-deployed information
-
-```json
-data "aws_route53_zone" "zone" {
-  name = "tf.itc.cgi-north.de"
-}
-```
-
----
-
-# Isolating State Files
-
-With a remote backend and locking, collaboration is no longer a problem. However, there is still one more problem remaining: **isolation**.
-
-## Isolate State via workspaces!
-
-`$ terraform workspace show`
-`$ terraform workspace new prod`
-`$ terraform workspace new qa`
-`$ terraform workspace list`
-`$ terraform workspace select prod`
-
----
-
-# setup a simple example
-
-```json
-resource "aws_instance" "example" {
-  ami = "ami-0c55b159cbfafe1f0"
-  instance_type = "t2.micro"
-}
-
-terraform {
-  backend "s3" {
-    # Replace this with your bucket name!
-    bucket         = "tf-demo-state-42"
-    key            = "workspaces-example/terraform.tfstate"
-    region         = "eu-central-1"
-
-    # Replace this with your DynamoDB table name!
-    dynamodb_table = "tf-demo-locks"
-    encrypt        = true
-  }
-}
-```
-
----
-
-# LAB
-
-## Setup workspaces
-
-- create a simple ressource
-- create a remote backend
-- configure two different workspaces
-
-![bg right 100%](assets/programming-code.jpg)
+# Terraform and Load Balancer
 
 ---
 
@@ -1608,6 +1620,19 @@ resource "aws_lb_target_group_attachment" "alb-attachment" {
 
 ---
 
+# LAB
+
+## create an alb + webserver cluster
+
+- create 2 webserver replicas with metadata-instace-id
+- add ingress-rule for port 80 open to the world
+- create an internet-facing alb with target-groups
+- add a DNS-Entry for the ALB
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
 # Auto Scaling Group
 
 ```json
@@ -1630,17 +1655,52 @@ resource "aws_autoscaling_group" "autoscaling_group" {
 
 # LAB
 
-## create an alb + webserver cluster
+## auto-scaling-group
 
-- create 2 webserver replicas with metadata-instace-id
-- add ingress-rule for port 80 open to the world
-- create an internet-facing alb with target-groups
-- add a DNS-Entry for the ALB
+- extend the example with an ASG
+- min 2 / max 5 Instances
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
+# Terraform and RDS
+
+---
+
+# MySQL RDS Example
+
+```json
+resource "aws_db_instance" "rds_mysql" {
+  allocated_storage      = 20
+  max_allocated_storage  = 100
+  storage_type           = "gp2"
+  engine                 = "mysql"
+  engine_version         = "5.7"
+  instance_class         = var.db_instance_type
+  name                   = var.db_name
+  username               = var.db_user
+  password               = var.db_password
+  parameter_group_name   = "default.mysql5.7"
+  skip_final_snapshot    = true
+  vpc_security_group_ids = [aws_security_group.mysql-access.id]
+  publicly_accessible    = true
+}
+```
+
+---
+
+# LAB
+
+## Setup a MySQQL RDS
+
+- create a mysql database
+- create a security-group
+- create acess to public
+- test the access via db-client (optional)
 
 ![bg right 100%](assets/programming-code.jpg)
 
 ---
 
 # Thank you
-
----
