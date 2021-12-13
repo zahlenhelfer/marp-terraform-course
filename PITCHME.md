@@ -806,8 +806,8 @@ Within top-level block constructs like resources, expressions can usually be use
 ### Create Security Groups with dynamic blocks (simple)
 
 ```json
-local {
-  ports = [80, 443, 22]
+variable "ports" {
+  default = [80, 443, 22]
 }
 
 resource "aws_security_group" "dynamic-demo" {
@@ -815,7 +815,7 @@ resource "aws_security_group" "dynamic-demo" {
   description = "Dynamic Blocks for Ingress"
 
   dynamic "ingress" {
-    for_each = local.ports
+    for_each = var.ports
     content {
       description = "description ${ingress.key}"
       from_port   = ingress.value
@@ -832,13 +832,14 @@ resource "aws_security_group" "dynamic-demo" {
 ### Create Security Groups with dynamic blocks (with maps)
 
 ```json
-locals {
-  map = {
-    "description 0" = {
+variable "sg_config" {
+  type = map(any)
+  default = {
+    "web access" = {
       port = 80,
       cidr_blocks = ["0.0.0.0/0"],
     }
-    "description 1" = {
+    "ssh access" = {
       port = 22,
       cidr_blocks = ["10.0.0.0/16"],
     }
@@ -849,7 +850,7 @@ resource "aws_security_group" "map" {
   description = "demo-map"
 
   dynamic "ingress" {
-    for_each = local.map
+    for_each = var.sg_config
     content {
       description = ingress.key # IE: "description 0"
       from_port   = ingress.value.port
