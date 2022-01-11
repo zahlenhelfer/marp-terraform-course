@@ -16,7 +16,7 @@
 [vercel]: https://vercel.com/
 
 <p align="center">
-  <a href="https://yhatt.github.io/marp-cli-example"><img src="https://yhatt.github.io/marp-cli-example/og-image.jpg" width="500" /></a>
+  <a href="https://zahlenhelfer.github.io/marp-terraform-course"><img src="https://yhatt.github.io/marp-cli-example/og-image.jpg" width="500" /></a>
 </p>
 
 ## See published slide deck
