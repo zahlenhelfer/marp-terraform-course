@@ -9,7 +9,7 @@ keywords: terraform,aws,iac
 #image: https://marp.app/og-image.jpg
 paginate: true
 #backgroundImage: url('assets/hero-background.jpg')
-footer: '(c) 2021 - Terraform with AWS V 1.0.4'
+footer: '(c) 2021 - Terraform with AWS V 1.0.5'
 #theme: uncover
 #color: #000
 #colorSecondary: #333
@@ -23,26 +23,48 @@ footer: '(c) 2021 - Terraform with AWS V 1.0.4'
 
 # <!-- fit --> Terraform 1.0 with AWS
 
-### Hosted by Marcus Ross for CGI
+### Infrastructure as Code
 
-**Version:** 1.0.4
+**Version:** 1.0.5
 
 ---
 
-# Course Details
+# Course Details 1/2
 
-We have two sessions (days) to cover the agenda.
+We have three days to cover the agenda.
 
-- Session 1 @ 9AM-4PM Terraform Fundamentals and AWS Core Services
-- Session 2 @ 9AM-4PM Terraform Advanded and more AWS Services
+- Module 01 - Overview
+- Module 02 - Installation and first steps
+- Module 03 - Virtual Private Cloud (VPC)
+- Module 04 - More foundational terraform development
+- Module 05 - EC2 Instances with Terraform
+- Module 06 - Datasources and Terraform
+- Module 07 - S3 with Terraform
+
+---
+
+# Course Details 2/2
+
+- Module 08 - Remote-State Files with S3
+- Module 09 - Route53 with Terraform
+- Module 10 - Relational Database Services (RDS) with Terraform
+- Module 11 - Use and develop Modules with Terraform
+- Module 12 - Manage Dev/Stage/Prod with Terraform
+- Module 13 - IAM with Terraform
+- Module 14 - EKS Kubernetes with Terraform
+
 
 ---
 
 # Goals of the Course
 
-- use Terrafrom to deploy some Infrastructure
-- Hands-On Time
+- use Terrafrom to deploy  Infrastructure in AWS
 - getting a refresh on AWS services
+- Hands-On Time
+
+---
+
+# <!-- fit --> MOD 01 - Overview
 
 ---
 
@@ -66,7 +88,7 @@ Source: [Wikipedia](https://en.wikipedia.org/wiki/Infrastructure_as_code)
 
 ---
 
-# Is Terraform the only how does IaC?
+# Is Terraform the only one how does IaC?
 
 ![80%](assets/deployment-tools.png)
 
@@ -77,12 +99,6 @@ Source: [Wikipedia](https://en.wikipedia.org/wiki/Infrastructure_as_code)
 This template creates a single EC2 instance in AWS
 
 ![80%](assets/00-template_example.png)
-
----
-
-# Terraform – Core Loop
-
-![60%](assets/terraform-loop.png)
 
 ---
 
@@ -115,21 +131,50 @@ This template creates a single EC2 instance in AWS
 
 ---
 
-# LAB
-
-## Setup & "Hello Infra"
-
-- Install and Setup Terraform
-- create IAM User in AWS
-  (AWS-CLI/Console)
-- Initialize the aws-Provider
-- define EC2-Instance and apply
-
-![bg right 100%](assets/programming-code.jpg)
+# <!-- fit --> MOD 02 - Installation and first steps
 
 ---
 
-# create a very risky simple ec2-instance (main.tf)
+# TODO:
+SETUP AWS Keys
+Simple EC2 Deployment
+
+---
+
+# Windows Install
+
+- [Download](https://www.terraform.io/downloads) the single binary from terraform-website
+- move it to a `Directory`,
+for example `C:\Apps\Terraform`
+- add it to your Systems-Path:
+`Control Panel` -> `System` -> `System settings` -> `Environment Variables`
+
+![bg right 80%](assets/tf-setup-win-path.png)
+
+---
+
+# MacOS/Linx Install
+
+- [Download](https://www.terraform.io/downloads) the single binary from terraform-website
+- put it in /usr/local/bin
+`$ mv ~/Downloads/terraform /usr/local/bin/`
+
+---
+
+# AWS – setup a terraform-user
+
+
+
+
+---
+
+# Terraform – Core Loop
+
+![60%](assets/terraform-loop.png)
+
+---
+
+# simple ec2-instance example (main.tf)
 
 ```json
 provider "aws" {
@@ -146,14 +191,25 @@ resource "aws_instance" "app_server" {
 }
 ```
 
-Why is this a weak example in the sense of IaC and **not** AWS perspective?
+Question: Why is this a weak example in the sense of IaC and **not** AWS perspective?
 
 ---
 
 # Terraform Version constraints
 
 specify a range of acceptable versions (">= 1.2.0, < 2.0.0")
-![80%](assets/tf-version-constraint.png)
+
+```json
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">=3.71"
+    }
+  }
+  required_version = ">=1.0"
+}
+```
 
 ---
 
@@ -183,6 +239,20 @@ resource "aws_instance" "app_server" {
   }
 }
 ```
+---
+
+# LAB
+
+## Setup & "Hello Infra"
+
+- Install and Setup Terraform
+- create IAM User in AWS
+  (AWS-CLI/Console)
+- Initialize the aws-Provider
+- define EC2-Instance and apply
+
+![bg right 100%](assets/programming-code.jpg)
+
 
 ---
 
@@ -262,7 +332,71 @@ crash.log
 
 ---
 
-# getting replicas with count
+# <!-- fit --> MOD 03 - Virtual Private Cloud (VPC)
+
+---
+
+![right 10%](assets/vpc-logo.png)
+
+# [Virtual Private Cloud](https://docs.aws.amazon.com/vpc/index.html)
+
+- A VPC is a virtual network dedicated to your AWS account
+- Requires an IPv4 address space and optionally IPv6 address ranges
+- Enables you to create specific CIDR ranges for your resources to occupy
+- Provides strict access rules for inbound and outbound traffic.
+
+---
+
+# Components of a VPC
+
+- VPC CIDR Block
+- Subnet
+- Gateways
+- Route Table
+- Network Access Control Lists
+- Security Groups
+
+![bg right 100%](assets/vpc-compontens.jpeg)
+
+###### [Source from Rackspace Blog](https://www.rackspace.com/blog/aws-201-understanding-the-default-virtual-private-cloud)
+
+---
+
+# a basic VPC
+
+- VPC CIDR Block
+- public Subnet
+- Internet-Gateway (or NAT)
+- "main"-Route Table
+- Network Access Control List
+
+
+![bg right 80%](assets/vpc-basic-setup-trans.png)
+
+---
+
+# LAB
+
+## create a VPC (hard-way)
+
+- create a VPC in eu-central-1
+- create one public Subnet for one AZ
+- create an Internet-GW
+- create a Route Table
+- deploy a test-ec2 instance
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
+
+
+---
+# <!-- fit --> MOD 05 - fundamental terraform development
+
+---
+
+# getting replicas with `count`
 
 This template creates 4 single EC2 instance in AWS
 
@@ -280,10 +414,6 @@ resource "aws_instance" "app_server" {
 
 ---
 
-# Welcome to the World of Variables
-
----
-
 # Variables - simple types
 
 There are simple types of variables you can set:
@@ -291,6 +421,8 @@ There are simple types of variables you can set:
 - string
 - number
 - bool
+
+---
 
 ### define a Variable (variables.tf)
 
@@ -302,9 +434,7 @@ variable "app_server_instance_type" {
 }
 ```
 
----
-
-### use Variables in HCL (main.tf)
+### use a Variable (main.tf)
 
 ```json
 resource "aws_instance" "app_server" {
@@ -1432,57 +1562,6 @@ However, there is still one more problem remaining: **isolation**.
 - configure two different workspaces
   - production
   - development
-
-![bg right 100%](assets/programming-code.jpg)
-
----
-
-![right 10%](assets/vpc-logo.png)
-
-# Virtual Privat Cloud
-
-- A VPC is a virtual network dedicated to your AWS account
-- Requires an IPv4 address space and optionally IPv6 address ranges
-- Enables you to create specific CIDR ranges for your resources to occupy
-- Provides strict access rules for inbound and outbound traffic.
-
----
-
-# Components of a VPC
-
-- VPC CIDR Block
-- Subnet
-- Gateways
-- Route Table
-- Network Access Control Lists
-- Security Groups
-
-![bg right 100%](assets/vpc-compontens.jpeg)
-
-###### [Source from Rackspace Blog](https://www.rackspace.com/blog/aws-201-understanding-the-default-virtual-private-cloud)
-
----
-
-# Multi-VPC per Account
-
-### Best suited for:
-
-- single team or single organizations, such as managed service providers
-- limited teams, which makes it easier to maintain standards and manage access
-
-![80%](assets/multi-vpc.png)
-
----
-
-# LAB
-
-## create a VPC (hard-way)
-
-- create a VPC in eu-central-1
-- create one public Subnet for one AZ
-- create an Internet-GW
-- create a Route Table
-- deploy a test-ec2 instance
 
 ![bg right 100%](assets/programming-code.jpg)
 
