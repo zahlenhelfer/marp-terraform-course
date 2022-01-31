@@ -9,7 +9,7 @@ keywords: terraform,aws,iac
 #image: https://marp.app/og-image.jpg
 paginate: true
 #backgroundImage: url('assets/hero-background.jpg')
-footer: '(c) 2021 - Terraform with AWS V 1.0.5'
+footer: '(c) 2022 - Terraform with AWS V 1.1.6'
 #theme: uncover
 #color: #000
 #colorSecondary: #333
@@ -21,11 +21,11 @@ footer: '(c) 2021 - Terraform with AWS V 1.0.5'
 <!-- _paginate: false -->
 <!-- _class: lead -->
 
-# <!-- fit --> Terraform 1.0 with AWS
+# <!-- fit --> Terraform 1.1 with AWS
 
 ### Infrastructure as Code
 
-**Version:** 1.0.5
+**Version:** 1.1.7
 
 ---
 
@@ -34,7 +34,7 @@ footer: '(c) 2021 - Terraform with AWS V 1.0.5'
 We have three days to cover the agenda.
 
 - Module 01 - Overview
-- Module 02 - Installation and first steps
+- Module 02 - Installation and setup
 - Module 03 - Virtual Private Cloud (VPC)
 - Module 04 - More foundational terraform development
 - Module 05 - EC2 Instances with Terraform
@@ -74,9 +74,9 @@ We have three days to cover the agenda.
 - Documentation
 - Reliability
 - Reproducibility
-  - Dev
-  - Test
-  - Prod
+  * Dev
+  * Test
+  * Prod
 
 ---
 
@@ -110,7 +110,7 @@ This template creates a single EC2 instance in AWS
 
 - many resources for each provider
 
-- define resources as code in terraform templates
+- define resources as code in terraform templates (HCL)
 
 ---
 
@@ -131,17 +131,11 @@ This template creates a single EC2 instance in AWS
 
 ---
 
-# <!-- fit --> MOD 02 - Installation and first steps
+# <!-- fit --> MOD 02 - Installation and Setup
 
 ---
 
-# TODO:
-SETUP AWS Keys
-Simple EC2 Deployment
-
----
-
-# Windows Install
+# Windows install
 
 - [Download](https://www.terraform.io/downloads) the single binary from terraform-website
 - move it to a `Directory`,
@@ -153,24 +147,69 @@ for example `C:\Apps\Terraform`
 
 ---
 
-# MacOS/Linx Install
+# MacOS/Linux install
 
 - [Download](https://www.terraform.io/downloads) the single binary from terraform-website
 - put it in /usr/local/bin
 `$ mv ~/Downloads/terraform /usr/local/bin/`
+- have fun
 
 ---
 
-# AWS – setup a terraform-user
+# terraform-user setup
 
+- login to AWS-Console
+- switch to IAM-Service
+- create a new user
+- choose only 
+  **Access key - Programmatic access**
+- add the administrator role
+- note the access and secret key
 
+![bg right 35%](assets/aws-iam-logo.svg)
 
+---
+<style scoped>section { justify-content: start; }</style>
+
+# IAM Step 1/6
+
+![bg 30%](assets/iam-step-1.png)
+
+---
+<style scoped>section { justify-content: start; }</style>
+
+# IAM Step 2/6
+
+![bg 65%](assets/iam-step-2.png)
+
+---
+<style scoped>section { justify-content: start; }</style>
+
+# IAM Step 3/6
+
+![bg 50%](assets/iam-step-3.png)
+
+---
+<style scoped>section { justify-content: start; }</style>
+
+# IAM Step 4/6
+
+![bg 90%](assets/iam-step-4.png)
 
 ---
 
-# Terraform – Core Loop
+<style scoped>section { justify-content: start; }</style>
 
-![60%](assets/terraform-loop.png)
+# IAM Step 5/6
+
+![bg 55%](assets/iam-step-5.png)
+
+---
+<style scoped>section { justify-content: start; }</style>
+
+# IAM Step 6/6
+
+![bg 75%](assets/iam-step-6.png)
 
 ---
 
@@ -192,6 +231,11 @@ resource "aws_instance" "app_server" {
 ```
 
 Question: Why is this a weak example in the sense of IaC and **not** AWS perspective?
+
+---
+# Terraform – Core Loop
+
+![60%](assets/terraform-loop.png)
 
 ---
 
@@ -295,7 +339,7 @@ crash.log
 - check `terraform.tfstate`
 - change Instance-Type to `t3.micro`
 - add a `costcenter=42` Tag
-- `$ terraform apply` changes
+- `apply` changes
 - check the statefile again
 - change costcenter via Dashboard
 - `terraform plan` and check if TF can manage this drift
@@ -336,7 +380,7 @@ crash.log
 
 ---
 
-![right 10%](assets/vpc-logo.png)
+![bg right:30% 80%](assets/vpc-logo.png)
 
 # [Virtual Private Cloud](https://docs.aws.amazon.com/vpc/index.html)
 
@@ -346,23 +390,7 @@ crash.log
 - Provides strict access rules for inbound and outbound traffic.
 
 ---
-
-# Components of a VPC
-
-- VPC CIDR Block
-- Subnet
-- Gateways
-- Route Table
-- Network Access Control Lists
-- Security Groups
-
-![bg right 100%](assets/vpc-compontens.jpeg)
-
-###### [Source from Rackspace Blog](https://www.rackspace.com/blog/aws-201-understanding-the-default-virtual-private-cloud)
-
----
-
-# a basic VPC
+# Components of a basic VPC
 
 - VPC CIDR Block
 - public Subnet
@@ -370,35 +398,225 @@ crash.log
 - "main"-Route Table
 - Network Access Control List
 
+![bg right:40% 90%](assets/vpc-basic-setup-trans.png)
 
-![bg right 80%](assets/vpc-basic-setup-trans.png)
+---
 
+# Ressource aws_vpc
+Amazon Virtual Private Cloud (Amazon VPC) enables you to launch AWS resources into a virtual network that you've defined.
+
+```json
+resource "aws_vpc" "my_vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+
+  tags = {
+    Name = "My VPC"
+  }
+}
+```
+---
+# Ressource aws_subnet
+A subnet is a range of IP addresses in your VPC. After creating a VPC, you can add one or more subnets in each Availability Zone.
+
+```json
+resource "aws_subnet" "public" {
+  vpc_id            = aws_vpc.my_vpc.id
+  cidr_block        = "10.0.0.0/24"
+  availability_zone = "eu-central-1a"
+
+  tags = {
+    Name = "Public Subnet"
+  }
+}
+```
+---
+# Ressource aws_internet_gateway
+An internet gateway is a horizontally scaled, redundant, and highly available VPC component that enables communication between your VPC and the internet.
+
+```json
+resource "aws_internet_gateway" "my_vpc_igw" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  tags = {
+    Name = "My VPC - Internet Gateway"
+  }
+}
+```
+---
+# Ressource aws_route_table
+A route table contains a set of rules, called routes, that are used to determine where network traffic from your subnet or gateway is directed.
+
+```json
+resource "aws_route_table" "my_vpc_eu_central_1a_public" {
+  vpc_id = aws_vpc.my_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.my_vpc_igw.id
+  }
+
+  tags = {
+    Name = "Public Subnet Route Table."
+  }
+}
+```
+---
+# Ressource aws_route_table_association
+
+```json
+resource "aws_route_table_association" "my_vpc_eu_central_1a_public" {
+  subnet_id      = aws_subnet.public.id
+  route_table_id = aws_route_table.my_vpc_eu_central_1a_public.id
+}
+```
 ---
 
 # LAB
 
-## create a VPC (hard-way)
+## create a basic VPC 
 
-- create a VPC in eu-central-1
-- create one public Subnet for one AZ
-- create an Internet-GW
-- create a Route Table
-- deploy a test-ec2 instance
+- create a VPC in `eu-central-1`
+- create one `public Subnet` for one Availability Zone
+- create an `Internet-GW`
+- create a `Route Table`
+- associate the Route-Table with a Subnet
 
 ![bg right 100%](assets/programming-code.jpg)
 
 ---
 
-
-
----
-# <!-- fit --> MOD 05 - fundamental terraform development
+# <!-- fit --> MOD 04 - Security Groups & EC2
 
 ---
 
-# getting replicas with `count`
+# [Security Groups](https://docs.aws.amazon.com/vpc/latest/userguide/VPC_SecurityGroups.html)
 
-This template creates 4 single EC2 instance in AWS
+- acts as a virtual firewall
+- controls your EC2 instances inbound and outbound traffic
+- act at the instance level, not the subnet level
+- assign up to five security groups to an instance
+- by default, they allow all outbound traffic
+
+---
+# Create Security Groups- and Rule-Objects
+
+```json
+resource "aws_security_group" "web_access" {
+  name        = "web_access"
+  description = "Allow port 80 access from outside world"
+}
+
+resource "aws_security_group_rule" "allow_webserver_access" {
+  type              = "ingress"
+  from_port         = 80
+  to_port           = 80
+  protocol          = "tcp"
+  cidr_blocks       = ["0.0.0.0/0"]
+  security_group_id = aws_security_group.web_access.id
+}
+```
+---
+
+### Use Security Groups with blocks
+
+```json
+resource "aws_security_group" "ssh_access" {
+  name        = "web_security_group"
+  description = "Terraform web security group"
+  vpc_id      = "vpc-47111266642"
+
+  egress {
+    from_port   = 0
+    to_port     = 0
+    protocol    = "-1"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 22
+    to_port     = 22
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+}
+```
+---
+
+# LAB
+
+## security a.k.a. SG
+
+- create a security-group "webserver-access"
+- add ingress-rule for port 22 and port 80 open to the world
+- add egress-rule for everything open to the world (if necessary)
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
+# create an SSH-Key-Pair
+
+```json
+resource "aws_key_pair" "my-pub-key" {
+  key_name   = "aws-pub-key"
+  public_key = "ABCDEFGXXXXXXXXXXXXX"
+}
+```
+
+for aws_instance usage
+reference it `key_name = aws_key_pair.my-pub-key.key_name`
+or use the name `key_name = "aws-pub-key"`
+
+---
+
+# Cloudwatch - basics
+- Cloudwatch is the AWS Monitoring Service
+- The level of CloudWatch monitoring could be 
+  - basic (Datapoint per 5 Minutes)
+  - detailed (Datapoint per 1 Minute)
+- Instances will be monitored by default in basic-level
+- to enable detailed monitoring use
+  `monitoring = true`
+
+---
+
+# Bootstrap with user_data
+
+Usually we can use SSH Access to install software manually or use something like Ansible. Here we will use the clout-init-hook `user_data` from an EC2-Ressource.
+
+```json
+user_data = << EOF
+  #!/bin/bash
+  sudo apt-get update
+  sudo apt-get install -y apache2
+  sudo systemctl start apache2
+  sudo systemctl enable apache2
+  echo "<h1>Deployed via Terraform</h1>" > /var/www/html/index.html
+EOF
+```
+
+---
+# deploy an EC2 instance to a VPC/Subnet
+if you are don´t want the `default`-VPC as the EC2 target, you need to specifiy a Subnet-Id from the VPC of your choice in the `aws_instance`-Ressource
+
+`subnet_id = "subnet-0c58bb979af8269a7"`
+
+This will handle the deployment to the associated VPC of the Subnet.
+
+---
+# Attach a security-group to EC2
+
+TODO: TEXT for a security group
+
+reference it `vpc_security_group_ids = [aws_security_group.allow_ssh.id]`
+or use the ID `vpc_security_group_ids = "sg-4711"`
+
+---
+
+# getting replicas with `count` and simple expressions
+
+This template creates 4 single EC2 instances in AWS
 
 ```json
 resource "aws_instance" "app_server" {
@@ -411,6 +629,24 @@ resource "aws_instance" "app_server" {
   }
 }
 ```
+---
+
+# LAB
+
+## more attributes
+
+define EC2-Instance with
+- add a subnet-id from your VPC
+- enable detailed monitoring
+- deploy a basic webserver
+- create two ec2-instances
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
+
+# <!-- fit --> MOD 05 - from static to dynamic deployment code
 
 ---
 
@@ -814,23 +1050,6 @@ resource "aws_instance" "app_server" {
 
 ---
 
-# Install a Webserver
-
-Usually we can use SSH Access to install software manually or use something like Ansible. Here we will use the clout-init-hook `user_data` from an EC2-Ressource.
-
-```
-user_data = << EOF
-  #!/bin/bash
-  sudo apt-get update
-  sudo apt-get install -y apache2
-  sudo systemctl start apache2
-  sudo systemctl enable apache2
-  echo "<h1>Deployed via Terraform</h1>" > /var/www/html/index.html
-EOF
-```
-
----
-
 # file()-Function
 
 we can use the file-function to dynamically load **local** files during deployment:
@@ -863,64 +1082,6 @@ user_data = file("install_webserver.sh")
 - add a user-data section to ec2
 - use file-function to load the script
 - check the webserver on the host `curl localhost`
-
-![bg right 100%](assets/programming-code.jpg)
-
----
-
-# Create Security Groups- and Rule-Objects
-
-```json
-resource "aws_security_group" "web_access" {
-  name        = "web_access"
-  description = "Allow port 80 access from outside world"
-}
-
-resource "aws_security_group_rule" "allow_webserver_access" {
-  type              = "ingress"
-  from_port         = 80
-  to_port           = 80
-  protocol          = "tcp"
-  cidr_blocks       = ["0.0.0.0/0"]
-  security_group_id = aws_security_group.web_access.id
-}
-```
-
----
-
-### Use Security Groups as one ressource with blocks
-
-```json
-resource "aws_security_group" "ssh_access" {
-  name        = "web_security_group"
-  description = "Terraform web security group"
-  vpc_id      = "vpc-47111266642"
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-}
-```
-
----
-
-# LAB
-
-## security a.k.a. SG
-
-- create a security-group "webserver-access"
-- add ingress-rule for port 22 and port 80 open to the world
-- add egress-rule for everything open to the world (if necessary)
 
 ![bg right 100%](assets/programming-code.jpg)
 
