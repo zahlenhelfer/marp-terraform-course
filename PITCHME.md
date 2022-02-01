@@ -9,7 +9,7 @@ keywords: terraform,aws,iac
 #image: https://marp.app/og-image.jpg
 paginate: true
 #backgroundImage: url('assets/hero-background.jpg')
-footer: '(c) 2022 - Terraform with AWS V 1.1.6'
+footer: '(c) 2022 - Terraform with AWS V 1.1.8'
 #theme: uncover
 #color: #000
 #colorSecondary: #333
@@ -25,7 +25,7 @@ footer: '(c) 2022 - Terraform with AWS V 1.1.6'
 
 ### Infrastructure as Code
 
-**Version:** 1.1.7
+**Version:** 1.1.8
 
 ---
 
@@ -33,26 +33,27 @@ footer: '(c) 2022 - Terraform with AWS V 1.1.6'
 
 We have three days to cover the agenda.
 
-- Module 01 - Overview
-- Module 02 - Installation and setup
+- Module 01 - Overview of IaC
+- Module 02 - Installation and Setup
 - Module 03 - Virtual Private Cloud (VPC)
-- Module 04 - More foundational terraform development
+- Module 04 - Security Groups & EC2
 - Module 05 - EC2 Instances with Terraform
-- Module 06 - Datasources and Terraform
-- Module 07 - S3 with Terraform
+- Module 06 - From static to dynamic deployment
+- Module 07 - Dependencies and Terraform
+- Module 08 - S3 Storage and Terraform
 
 ---
 
 # Course Details 2/2
 
-- Module 08 - Remote-State Files with S3
-- Module 09 - Route53 with Terraform
-- Module 10 - Relational Database Services (RDS) with Terraform
-- Module 11 - Use and develop Modules with Terraform
-- Module 12 - Manage Dev/Stage/Prod with Terraform
-- Module 13 - IAM with Terraform
-- Module 14 - EKS Kubernetes with Terraform
-
+- Module 09 - Terraform an Modules
+- Module 10 - Terraform and Elastic Load Balancing
+- Module 11 - Terraform and Scaling
+- Module 12 - Terraform and RDS
+- Module 13 - Terraform and Serverless
+- Module 14 - EKS with Terraform
+- Module 15 - Remote State / Workspaces
+- Module 16 - Terraform and Route53
 
 ---
 
@@ -64,7 +65,7 @@ We have three days to cover the agenda.
 
 ---
 
-# <!-- fit --> MOD 01 - Overview
+# <!-- fit --> MOD 01 - of IaC
 
 ---
 
@@ -166,7 +167,7 @@ for example `C:\Apps\Terraform`
 - add the administrator role
 - note the access and secret key
 
-![bg right 35%](assets/aws-iam-logo.svg)
+![bg right:40% 45%](assets/aws-iam-logo.svg)
 
 ---
 <style scoped>section { justify-content: start; }</style>
@@ -213,7 +214,7 @@ for example `C:\Apps\Terraform`
 
 ---
 
-# simple ec2-instance example (main.tf)
+# simple ec2-instance example
 
 ```json
 provider "aws" {
@@ -221,7 +222,7 @@ provider "aws" {
 }
 
 resource "aws_instance" "app_server" {
-  ami = "ami-830c94e3"
+  ami           = "ami-830c94e3"
   instance_type = "t2.micro"
 
   tags = {
@@ -231,11 +232,6 @@ resource "aws_instance" "app_server" {
 ```
 
 Question: Why is this a weak example in the sense of IaC and **not** AWS perspective?
-
----
-# Terraform – Core Loop
-
-![60%](assets/terraform-loop.png)
 
 ---
 
@@ -257,7 +253,7 @@ terraform {
 
 ---
 
-### a better approach for a simple ec2-instance (main.tf)
+### a better approach for a simple ec2-instance
 
 ```json
 terraform {
@@ -265,7 +261,7 @@ terraform {
     aws = {
       source = "hashicorp/aws"
       version = "~> 3.27"
-    }
+      }
   }
   required_version = ">= 1.0"
 }
@@ -275,14 +271,18 @@ provider "aws" {
 }
 
 resource "aws_instance" "app_server" {
-  ami = "ami-830c94e3"
+  ami           = "ami-830c94e3"
   instance_type = "t2.micro"
-
-  tags = {
+  tags          = {
     Name = "ExampleAppServerInstance"
   }
 }
 ```
+---
+# Terraform – Core Loop
+
+![60%](assets/terraform-loop.png)
+
 ---
 
 # LAB
@@ -545,7 +545,7 @@ resource "aws_security_group" "ssh_access" {
 
 # LAB
 
-## security a.k.a. SG
+## Security Groups
 
 - create a security-group "webserver-access"
 - add ingress-rule for port 22 and port 80 open to the world
@@ -555,7 +555,9 @@ resource "aws_security_group" "ssh_access" {
 
 ---
 
-# create an SSH-Key-Pair
+# [SSH-Key-Pair](https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html?icmpid=docs_ec2_console)
+
+A key pair, consisting of a public key and a private key, is a set of security credentials that you use to prove your identity when connecting to an Amazon EC2 instance. Amazon EC2 stores the public key on your instance, and you store the private key
 
 ```json
 resource "aws_key_pair" "my-pub-key" {
@@ -573,8 +575,8 @@ or use the name `key_name = "aws-pub-key"`
 # Cloudwatch - basics
 - Cloudwatch is the AWS Monitoring Service
 - The level of CloudWatch monitoring could be 
-  - basic (Datapoint per 5 Minutes)
-  - detailed (Datapoint per 1 Minute)
+  - basic (5 Min./Datapoint)
+  - detailed (1 Min./Datapoint)
 - Instances will be monitored by default in basic-level
 - to enable detailed monitoring use
   `monitoring = true`
@@ -583,7 +585,7 @@ or use the name `key_name = "aws-pub-key"`
 
 # Bootstrap with user_data
 
-Usually we can use SSH Access to install software manually or use something like Ansible. Here we will use the clout-init-hook `user_data` from an EC2-Ressource.
+Usually we can use SSH-Access to install software manually or use something like Ansible. Here we will use the clout-init-hook `user_data` from an EC2-Ressource.
 
 ```json
 user_data = << EOF
@@ -597,7 +599,7 @@ EOF
 ```
 
 ---
-# deploy an EC2 instance to a VPC/Subnet
+# Deploy an EC2 instance to a VPC/Subnet
 if you are don´t want the `default`-VPC as the EC2 target, you need to specifiy a Subnet-Id from the VPC of your choice in the `aws_instance`-Ressource
 
 `subnet_id = "subnet-0c58bb979af8269a7"`
@@ -605,12 +607,13 @@ if you are don´t want the `default`-VPC as the EC2 target, you need to specifiy
 This will handle the deployment to the associated VPC of the Subnet.
 
 ---
-# Attach a security-group to EC2
+# Attach a Security-Group to EC2
 
-TODO: TEXT for a security group
-
-reference it `vpc_security_group_ids = [aws_security_group.allow_ssh.id]`
-or use the ID `vpc_security_group_ids = "sg-4711"`
+Security Groups including Roles needs to be attached to EC2-Instance for use. You can easily achive this in Terraform with,
+- a reference
+ `vpc_security_group_ids = [aws_security_group.allow_ssh.id]`
+- or use of the ID
+ `vpc_security_group_ids = "sg-4711"`
 
 ---
 
@@ -635,18 +638,18 @@ resource "aws_instance" "app_server" {
 
 ## more attributes
 
-define EC2-Instance with
+create an EC2-Instance
 - add a subnet-id from your VPC
 - enable detailed monitoring
 - deploy a basic webserver
-- create two ec2-instances
+- create two of this configuration
 
 ![bg right 100%](assets/programming-code.jpg)
 
 ---
 
 
-# <!-- fit --> MOD 05 - from static to dynamic deployment code
+# <!-- fit --> MOD 06 - from static to dynamic deployment
 
 ---
 
@@ -727,10 +730,11 @@ variable "image-id" {
 
 ## use Variables & Functions I
 
-- create variable `node_count`
-- create variable `ami_id`
-- create varible `instance_type`
-- create 3 replicas of your EC2
+refactor the solution with
+- variable `node_count`
+- variable `ami_id`
+- varible `instance_type`
+- 3 replicas of your EC2 per default
 
 ![bg right 100%](assets/programming-code.jpg)
 
@@ -784,9 +788,11 @@ user  = var.user_names[count.index]
 # LAB
 
 ## use Variables & Functions II
-
-- create variable `region` and set default to **eu-central-1**
-- change variable type `ami_id` to `map`
+refactor the solution with
+- variable `region`, default to
+**eu-central-1**
+- change variable type 
+`ami_id` to `map`
 
 ![bg right 100%](assets/programming-code.jpg)
 
@@ -815,7 +821,7 @@ Windows: `$ terraform apply --var-file=env/development.tfvars`
 # LAB
 
 ## use Variable-Files
-
+refactor the solution with
 - create `production.tfvar`
   - `region` to 'eu-central-1'
   - `instance_type` to t3.micro
@@ -850,7 +856,7 @@ set the value (PowerShell)
 
 ---
 
-# use Variables on the Command Line
+# use Variables on the Commandline
 
 To specify individual variables on the command line, use the `-var` option when running the terraform plan and terraform apply commands:
 
@@ -1077,7 +1083,7 @@ user_data = file("install_webserver.sh")
 # LAB
 
 ## install a webserver at startup
-
+refactor the solution
 - create an install script for Apache
 - add a user-data section to ec2
 - use file-function to load the script
@@ -1242,7 +1248,7 @@ data "aws_subnet_ids" "private" {
 # LAB
 
 ## use a datasource
-
+refactor the solution
 - create a datasource to query the newest Amazon Linux 2 AMI
 - create an ec2-instance and use the AMI dynamically
 
@@ -1290,7 +1296,7 @@ resource "aws_instance" "webserver" {
 
 ---
 
-# Dependencies and Terraform
+# <!-- fit --> MOD 07 - Dependencies and Terraform
 
 ---
 
@@ -1370,7 +1376,7 @@ resource "aws_instance" "app_server" {
 
 ---
 
-# S3 Storage and Terraform
+# <!-- fit --> MOD 08 - S3 Storage and Terraform
 
 ---
 
@@ -1569,45 +1575,160 @@ resource "aws_s3_bucket" "bucket" {
 
 ---
 
-# Terraform and DNS
+# <!-- fit --> MOD 09 - Terraform an Modules
 
 ---
 
-# The Route53 Record [Resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record)
+# the power of modules
+
+A module is a container for multiple resources that are used together. Modules can be used to create lightweight abstractions, so that you can describe your infrastructure in terms of its architecture.
+
+![bg right 80%](assets/lego-stack.jpg)
+
+---
+
+# [vpc-module]() example
 
 ```json
-resource "aws_route53_record" "tf-alb-record" {
-  zone_id = data.aws_route53_zone.zone.zone_id
-  name    = "tf-alb.${var.route53_hosted_zone_name}"
-  type    = "A"
-  alias {
-    name                   = aws_alb.alb.dns_name
-    zone_id                = aws_alb.alb.zone_id
-    evaluate_target_health = true
+module "vpc" {
+  source  = "terraform-aws-modules/vpc/aws"
+  version = "3.7.0"
+
+  name = "my-vpc"
+  cidr = "10.0.0.0/16"
+  azs             = ["${var.region}a", "${var.region}b", "${var.region}c"]
+  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
+  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
+  enable_vpn_gateway = false
+}
+```
+
+and don´t forget to `$ terraform init`
+
+---
+
+# LAB
+
+## Setup your VPC (Module-Support)
+
+- create a VPC in `eu-central-1`
+- create three public & privat Subnets with each AZ
+- create an Internet-Gatway
+- create a NAT-Gateway
+- create a Route Table
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
+# <!-- fit --> MOD 10 - Terraform and Elastic Load Balancing
+
+---
+
+# [AWS Elastic Load Balancing](https://docs.aws.amazon.com/elasticloadbalancing/latest/userguide/what-is-load-balancing.html#load-balancer-pricing)
+
+- automatically distributes incoming traffic across multiple targets
+  - EC2 instances
+  - containers
+  - IP addresses
+- targets one or more Availability Zones
+- monitors the health of its targets
+- routes traffic only to healthy targets
+- scales load balancer if incoming traffic changes over time
+
+---
+
+# [Application Load Balancer](https://docs.aws.amazon.com/elasticloadbalancing/latest/application/introduction.html)
+
+- internet-/internal-facing
+- Layer 4
+- fully managed by AWS
+- routable to private Subnets
+- SSL-Offload possible
+- HTTP/2 Proxy possible
+- uses Target-Groups and Healthchecks
+
+![bg right:40% 80%](assets/elb-logo.png)
+
+
+---
+
+# Classic-Loadbalancer Ressource (simple)
+
+```json
+resource "aws_elb" "elb-appserver" {
+  name               = "elb-appserver"
+  availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
+  instances          = aws_instance.app_server.*.id
+  security_groups    = [aws_security_group.elb-appserver-sg.id]
+
+  listener {
+    instance_port     = 80
+    instance_protocol = "http"
+    lb_port           = 80
+    lb_protocol       = "http"
+  }
+
+  tags = {
+    Name = "terraform-elb"
   }
 }
 ```
 
 ---
 
-# How to obtain hosted zone information
-
-#### you can create a new hosted zone (not usual)
+# Application-Loadbalancer Ressource
 
 ```json
-resource "aws_route53_zone" "my-test-zone" {
-  name = "example.com"
-  vpc {
-    vpc_id = "${var.vpc_id}"
+resource "aws_alb" "alb" {
+  name            = "terraform-example-alb"
+  security_groups = [aws_security_group.alb.id]
+  subnets         = ["subnet-04c352b2400a7c891",
+                     "subnet-0d752b61d8c0072d6",
+                     "subnet-0b516a2ea3f89bdf4"]
+}
+```
+
+```json
+resource "aws_alb_listener" "listener_http" {
+  load_balancer_arn = aws_alb.alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+  default_action {
+    target_group_arn = aws_alb_target_group.web-group.arn
+    type             = "forward"
   }
 }
 ```
 
-#### you can use a datasource here to finde pre-deployed information
+---
+
+# Target-Group
+
+Each target group is used to route requests to one or more registered targets. When you create each listener rule, you specify a target group and conditions. When a rule condition is met, traffic is forwarded to the corresponding target group.
 
 ```json
-data "aws_route53_zone" "zone" {
-  name = "aws.zhtraining.de"
+resource "aws_alb_target_group" "web-group" {
+  name     = "terraform-example-alb-target"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+  health_check {
+    path = "/"
+    port = 80
+  }
+}
+```
+---
+# Attach Instances to a Target-Group
+This ressource does the work of adding EC2 Intances to the Target-Group of the LoadBalancer.
+
+```json
+resource "aws_lb_target_group_attachment" "alb-attachment" {
+  count            = var.node_count
+  target_group_arn = aws_alb_target_group.web-group.arn
+  target_id        = aws_instance.webserver-instance[count.index].id
+  port             = 80
 }
 ```
 
@@ -1615,13 +1736,334 @@ data "aws_route53_zone" "zone" {
 
 # LAB
 
-## use Route53 (DNS)
+## create an alb + webserver cluster
 
-- use hosted zone info
-- create a friendly dns entry for the static s3-bucket
-- try that on your browser
+- create 2 webserver replicas with metadata-instance-id
+- add ingress-rule for port 80 open to the world
+- create an internet-facing alb with target-groups
+- add a DNS-Entry for the ALB (optional)
 
 ![bg right 100%](assets/programming-code.jpg)
+
+---
+
+# <!-- fit --> MOD 11 - Terraform and Scaling
+
+---
+
+# AWS Auto Scaling Service
+
+Auto Scaling groups are collections of Amazon EC2 instances that enable automatic scaling and fleet management features. These features help you maintain the health and availability of your applications.
+
+![bg right:40% 80%](assets/asg-logo.png)
+
+---
+
+# Launch configuration
+Defines an instance configuration template. The Auto Scaling group uses it to launch EC2 instances.
+```json
+resource "aws_launch_configuration" "launch_config" {
+  name_prefix     = "terraform-example-web-instance"
+  image_id        = "ami-04c921614424b07cd"
+  instance_type   = "t2.micro"
+  key_name        = aws_key_pair.my-pub-key.key_name
+  security_groups = [aws_security_group.allow_web_from_anywhere.id]
+  user_data       = file("install_webserver.sh")
+
+  lifecycle {
+    create_before_destroy = true
+  }
+}
+```
+
+----
+# Auto Scaling Goups (ASG)
+
+```json
+resource "aws_autoscaling_group" "autoscaling_group" {
+  launch_configuration = aws_launch_configuration.launch_config.id
+  min_size             = var.autoscaling_group_min_size
+  max_size             = var.autoscaling_group_max_size
+  target_group_arns    = [aws_alb_target_group.web-group.arn]
+  vpc_zone_identifier  = [module.vpc.private_subnets.0,
+                          module.vpc.private_subnets.1,
+                          module.vpc.private_subnets.2]
+
+  tag {
+    key                 = "Name"
+    value               = "terraform-example-autoscaling-group"
+    propagate_at_launch = true
+  }
+}
+```
+
+---
+
+# LAB
+
+## auto-scale web-server
+
+- extend the example with ASG
+- min 2 / max 5 Instances
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
+# <!-- fit --> MOD 12 - Terraform and RDS
+
+---
+# AWS RDS Databases
+- managed PaaS by AWS
+- scale up on demand
+- Multi-AZ / Read-Replica
+- Backups managed by AWS
+- EC2 underneath (one exception)
+
+![bg right:42% 100%](assets/rds-db-trans.png)
+
+---
+
+# MySQL RDS Example
+
+```json
+resource "aws_db_instance" "rds_mysql" {
+  allocated_storage      = 20
+  max_allocated_storage  = 100
+  storage_type           = "gp2"
+  engine                 = "mysql"
+  engine_version         = "5.7"
+  instance_class         = var.db_instance_type
+  name                   = var.db_name
+  username               = var.db_user
+  password               = var.db_password
+  parameter_group_name   = "default.mysql5.7"
+  skip_final_snapshot    = true
+  vpc_security_group_ids = [aws_security_group.mysql-access.id]
+  publicly_accessible    = true
+}
+```
+
+---
+
+# LAB
+
+## Setup a MySQL RDS
+
+- create a mysql database
+- create a security-group
+- create acess to public
+- test the access via db-client (optional)
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+# AWS Aurora
+
+- MySQL and PostgreSQL-compatible database
+- five times faster than MySQL
+- three times faster than PostgreSQL
+- built native on AWS
+- provisioned **and** serverless
+- **NO** public-access when serverless!
+
+---
+
+# AWS Aurora Serverless via Module 1/3
+As an alternative for the `aws_rds_cluster`-Ressource, we use a Module for the serverless approach.
+
+```json
+module "aurora_postgresql" {
+  source  = "terraform-aws-modules/rds-aurora/aws"
+  version = "6.1.4"
+  name                   = "serverless-aurora-postgresql"
+  engine                 = "aurora-postgresql"
+  engine_mode            = "serverless"
+  storage_encrypted      = true
+  master_username        = "admin"
+  master_password        = "Admin123"
+  create_random_password = false
+  vpc_id                = module.vpc.vpc_id
+  subnets               = module.vpc.database_subnets
+  create_security_group = true
+  ...
+```
+---
+# AWS Aurora Serverless via Module 2/3
+```json
+...
+  allowed_cidr_blocks = module.vpc.private_subnets_cidr_blocks
+  monitoring_interval = 60
+  enable_http_endpoint= true # cool for querying via HTTP
+  apply_immediately   = true
+  skip_final_snapshot = true
+
+  db_parameter_group_name         = aws_db_parameter_group.example_postgresql.id
+  db_cluster_parameter_group_name = aws_rds_cluster_parameter_group.example_postgresql.id
+  # enabled_cloudwatch_logs_exports = # NOT SUPPORTED
+
+  scaling_configuration = {
+    auto_pause               = true # cluster can be paused when idle
+    min_capacity             = 2    # capacity units
+    max_capacity             = 8    # capacity units
+    seconds_until_auto_pause = 300  # time before cluster is paused
+    timeout_action           = "ForceApplyCapacityChange"
+  }
+}
+```
+---
+# AWS Aurora Serverless via Module 3/3
+```json
+resource "aws_db_parameter_group" "example_postgresql" {
+  name        = "${var.demo-name}-aurora-db-postgres-parameter-group"
+  family      = "aurora-postgresql10"
+  description = "${var.demo-name}-aurora-db-postgres-parameter-group"
+}
+
+resource "aws_rds_cluster_parameter_group" "example_postgresql" {
+  name        = "${var.demo-name}-aurora-postgres-cluster-parameter-group"
+  family      = "aurora-postgresql10"
+  description = "${var.demo-name}-aurora-postgres-cluster-parameter-group"
+}
+```
+---
+
+# <!-- fit --> MOD 13 - Terraform and Serverless
+
+---
+
+# Lambda-Functions
+
+- run code without infrastructure
+- automatically scale on demand
+- pay-as-you-use-Modell
+  - by seconds of cpu
+  - by amount of memory
+- upload code as
+  - a .zip file
+  - container image
+
+---
+# Lambda essential Ressource
+
+```json
+resource "aws_lambda_function" "http_crud_lambda" {
+  filename         = "lambda_function.zip"
+  function_name    = "http-crud-tutorial-function"
+  role             = aws_iam_role.iam_for_lambda_tf.arn
+  handler          = "index.handler"
+  source_code_hash = data.archive_file.lambda_zip.output_base64sha256
+  runtime          = "nodejs14.x"
+  architectures    = ["arm64"]
+}
+```
+
+---
+
+# [DynamoDB](https://docs.aws.amazon.com/amazondynamodb/latest/developerguide/Introduction.html)
+
+- fully managed by aws
+- key-value and document database
+- delivers predictable performance at scale
+
+---
+
+# DynamoDB Ressource
+
+```json
+resource "aws_dynamodb_table" "http-crud-tutorial-table" {
+  name           = "http-crud-tutorial-items"
+  hash_key       = "id"
+  billing_mode   = "PAY_PER_REQUEST"
+
+  attribute {
+    name = "id"
+    type = "S"
+  }
+}
+```
+---
+
+# AWS API-Gateway
+
+- fully managed service
+- "front door" for applications
+- RESTful APIs 
+- WebSocket APIs
+- supported workloads
+  - containerized
+  - serverless
+  - web applications
+
+---
+
+# API-Gateway essential Ressources
+```json
+resource "aws_apigatewayv2_api" "http-crud-tutorial-api" {
+  name          = "http-crud-tutorial-api"
+  protocol_type = "HTTP"
+}
+```
+
+```json
+resource "aws_apigatewayv2_route" "route-1" {
+  api_id    = aws_apigatewayv2_api.http-crud-tutorial-api.id
+  route_key = "GET /items/{id}"
+  target    = "integrations/${aws_apigatewayv2_integration.http-crud-tutorial-api.id}"
+}
+```
+---
+
+# LAB
+
+## [Setup a API](https://docs.aws.amazon.com/apigateway/latest/developerguide/http-api-dynamo-db.html)
+
+- create a dynamo-db table
+- create a lambda function
+- create an api-gateway
+- test the api with `curl`
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
+
+# <!-- fit --> MOD 14 - EKS with Terraform
+
+---
+
+# [AWS Elastic Kubernetes Service](https://docs.aws.amazon.com/eks/latest/userguide/what-is-eks.html)
+
+- a managed service to run Kubernetes
+- runs and scales Kubernetes across multiple AZs
+- can be node-based or serverless (fargate)
+---
+
+# EKS Ressources
+
+```json
+TODO: CODE HERE
+```
+
+---
+# How to `kubectl` into the EKS-cluster
+
+```bash
+# get the kubeconfig-Data
+$ aws eks --region $(terraform output -raw region) update-kubeconfig --name $(terraform output -raw cluster_name)
+
+# check the nodes in the cluster
+$ kubectl cluster-info
+
+# check the nodes in the cluster
+$ kubectl get nodes
+
+# check if pods are running
+$ kubectl get pods
+```
+
+---
+
+# <!-- fit --> MOD 15 - Remote State / Workspaces
 
 ---
 
@@ -1728,134 +2170,45 @@ However, there is still one more problem remaining: **isolation**.
 
 ---
 
-# Terraform an Modules
+# <!-- fit --> MOD 15 - Terraform and Route53
 
 ---
 
-# the power of modules
-
-A module is a container for multiple resources that are used together. Modules can be used to create lightweight abstractions, so that you can describe your infrastructure in terms of its architecture.
-
-![bg right 80%](assets/lego-stack.jpg)
-
----
-
-# [vpc-module]() example
+# The Route53 Record [Resource](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route53_record)
 
 ```json
-module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "3.7.0"
-
-  name = "my-vpc"
-  cidr = "10.0.0.0/16"
-  azs             = ["${var.region}a", "${var.region}b", "${var.region}c"]
-  private_subnets = ["10.0.1.0/24", "10.0.2.0/24", "10.0.3.0/24"]
-  public_subnets  = ["10.0.101.0/24", "10.0.102.0/24", "10.0.103.0/24"]
-  enable_vpn_gateway = false
-}
-```
-
-and don´t forget to `$ terraform init`
-
----
-
-# LAB
-
-## Setup your VPC (Module-Support)
-
-- create a VPC in `eu-central-1`
-- create three public & privat Subnets with each AZ
-- create an Internet-GW
-- create a Route Table
-
-![bg right 100%](assets/programming-code.jpg)
-
----
-
-# Terraform and Load Balancer
-
----
-
-# AWS Load Balancer
-
-- Classic Load Balancer
-- Application Load Balancer
-- Network Load Balancer
-
----
-
-# Classic-Loadbalancer Ressource (simple)
-
-```json
-resource "aws_elb" "elb-appserver" {
-  name               = "elb-appserver"
-  availability_zones = ["us-west-2a", "us-west-2b", "us-west-2c"]
-  instances          = aws_instance.app_server.*.id
-  security_groups    = [aws_security_group.elb-appserver-sg.id]
-
-  listener {
-    instance_port     = 80
-    instance_protocol = "http"
-    lb_port           = 80
-    lb_protocol       = "http"
-  }
-
-  tags = {
-    Name = "terraform-elb"
+resource "aws_route53_record" "tf-alb-record" {
+  zone_id = data.aws_route53_zone.zone.zone_id
+  name    = "tf-alb.${var.route53_hosted_zone_name}"
+  type    = "A"
+  alias {
+    name                   = aws_alb.alb.dns_name
+    zone_id                = aws_alb.alb.zone_id
+    evaluate_target_health = true
   }
 }
 ```
 
 ---
 
-# Application-Loadbalancer Ressource
+# How to obtain hosted zone information
+
+#### you can create a new hosted zone (not usual)
 
 ```json
-resource "aws_alb" "alb" {
-  name            = "terraform-example-alb"
-  security_groups = [aws_security_group.alb.id]
-  subnets         = ["subnet-04c352b2400a7c891",
-                     "subnet-0d752b61d8c0072d6",
-                     "subnet-0b516a2ea3f89bdf4"]
-}
-```
-
-```json
-resource "aws_alb_listener" "listener_http" {
-  load_balancer_arn = aws_alb.alb.arn
-  port              = "80"
-  protocol          = "HTTP"
-  default_action {
-    target_group_arn = aws_alb_target_group.web-group.arn
-    type             = "forward"
+resource "aws_route53_zone" "my-test-zone" {
+  name = "example.com"
+  vpc {
+    vpc_id = "${var.vpc_id}"
   }
 }
 ```
 
----
-
-# Target-Group
+#### you can use a datasource here to finde pre-deployed information
 
 ```json
-resource "aws_alb_target_group" "web-group" {
-  name     = "terraform-example-alb-target"
-  port     = 80
-  protocol = "HTTP"
-  vpc_id   = var.vpc_id
-  health_check {
-    path = "/"
-    port = 80
-  }
-}
-```
-
-```json
-resource "aws_lb_target_group_attachment" "alb-attachment" {
-  count            = var.node_count
-  target_group_arn = aws_alb_target_group.web-group.arn
-  target_id        = aws_instance.webserver-instance[count.index].id
-  port             = 80
+data "aws_route53_zone" "zone" {
+  name = "aws.zhtraining.de"
 }
 ```
 
@@ -1863,82 +2216,11 @@ resource "aws_lb_target_group_attachment" "alb-attachment" {
 
 # LAB
 
-## create an alb + webserver cluster
+## use Route53 (DNS)
 
-- create 2 webserver replicas with metadata-instace-id
-- add ingress-rule for port 80 open to the world
-- create an internet-facing alb with target-groups
-- add a DNS-Entry for the ALB
-
-![bg right 100%](assets/programming-code.jpg)
-
----
-
-# Auto Scaling Group
-
-```json
-resource "aws_autoscaling_group" "autoscaling_group" {
-  launch_configuration = "${aws_launch_configuration.launch_config.id}"
-  min_size             = "${var.autoscaling_group_min_size}"
-  max_size = "${var.autoscaling_group_max_size}"
-  target_group_arns    = ["${aws_alb_target_group.group.arn}"]
-  vpc_zone_identifier = ["${aws_subnet.main.*.id}"]
-
-  tag {
-    key = "Name"
-    value = "terraform-example-autoscaling-group"
-    propagate_at_launch = true
-  }
-}
-```
-
----
-
-# LAB
-
-## auto-scaling-group
-
-- extend the example with an ASG
-- min 2 / max 5 Instances
-
-![bg right 100%](assets/programming-code.jpg)
-
----
-
-# Terraform and RDS
-
----
-
-# MySQL RDS Example
-
-```json
-resource "aws_db_instance" "rds_mysql" {
-  allocated_storage      = 20
-  max_allocated_storage  = 100
-  storage_type           = "gp2"
-  engine                 = "mysql"
-  engine_version         = "5.7"
-  instance_class         = var.db_instance_type
-  name                   = var.db_name
-  username               = var.db_user
-  password               = var.db_password
-  parameter_group_name   = "default.mysql5.7"
-  skip_final_snapshot    = true
-  vpc_security_group_ids = [aws_security_group.mysql-access.id]
-  publicly_accessible    = true
-}
-```
-
----
-
-# LAB
-
-## Setup a MySQQL RDS
-
-- create a mysql database
-- create a security-group
-- create acess to public
-- test the access via db-client (optional)
+- use hosted zone info
+- create a friendly dns entry for the static s3-bucket
+- try that on your browser
 
 ![bg right 100%](assets/programming-code.jpg)
 
