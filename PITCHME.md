@@ -9,7 +9,7 @@ keywords: terraform,aws,iac
 #image: https://marp.app/og-image.jpg
 paginate: true
 #backgroundImage: url('assets/hero-background.jpg')
-footer: '(c) 2022 - Terraform with AWS V 1.1.8'
+footer: '(c) 2022 - Terraform with AWS V 1.1.9'
 #theme: uncover
 #color: #000
 #colorSecondary: #333
@@ -25,7 +25,7 @@ footer: '(c) 2022 - Terraform with AWS V 1.1.8'
 
 ### Infrastructure as Code
 
-**Version:** 1.1.8
+**Version:** 1.1.9
 
 ---
 
@@ -211,6 +211,17 @@ for example `C:\Apps\Terraform`
 # IAM Step 6/6
 
 ![bg 75%](assets/iam-step-6.png)
+
+---
+# Export the AWS-Credentials
+
+set the value (Linux/MacOS)
+`export AWS_ACCESS_KEY_ID="AKIA4EELHKSBY6NZMA76"`
+`export AWS_SECRET_ACCESS_KEY="dtnRM/6+O"`
+
+set the value (PowerShell/Windows)
+`$env:AWS_ACCESS_KEY_ID="AKIA4EELHKSBY6NZMA76"`
+`$env:AWS_SECRET_ACCESS_KEY="dtnRM/6+O"`
 
 ---
 
@@ -2223,6 +2234,13 @@ data "aws_route53_zone" "zone" {
 - try that on your browser
 
 ![bg right 100%](assets/programming-code.jpg)
+
+---
+# Cloudwatch
+
+- Alarms
+---
+# [Cloudwatch Alarms](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/AlarmThatSendsEmail.html)
 
 ---
 
