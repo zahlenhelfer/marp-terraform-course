@@ -833,11 +833,11 @@ Windows: `$ terraform apply --var-file=env/development.tfvars`
 
 ## use Variable-Files
 refactor the solution with
-- create `production.tfvar`
+- create `production.tfvars`
   - `region` to 'eu-central-1'
   - `instance_type` to t3.micro
   - `node_count` to 2
-- create `development.tfvar`
+- create `development.tfvars`
   - `region` to 'eu-west-1'
   - `instance_type` to t2.micro
   - `node_count` to 1
