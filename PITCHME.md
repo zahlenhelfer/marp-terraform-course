@@ -119,7 +119,7 @@ This template creates a single EC2 instance in AWS
 
 ---
 
-# Terraform 1.0 - What are the beneifts?
+# Terraform 1.0 - What are the benefits?
 
 - Extended Maintenance Periods
   (1.x releases have 18 month maintenance period)
