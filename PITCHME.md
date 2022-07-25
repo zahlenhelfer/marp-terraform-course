@@ -2,7 +2,7 @@
 marp: true
 
 title: Terraform with AWS Slidedeck
-description: An example slide deck created by Marp CLI
+description: Using Terraform with AWS
 author: Marcus Ross
 keywords: terraform,aws,iac
 #url: https://marp.app/
@@ -296,9 +296,8 @@ resource "aws_instance" "app_server" {
 
 # Terraform _Standard_ Filelayout
 
-| Elastic Network Interface | Elastic Network Adapter |Elastic Fabric Adapter
-| ------------- | ------------------------------ | --- |
-| Up to 10 Gbps | Up to 100 Gbps |Up to 400 Gbps |
+| File / Folder | Purpose
+| ------------- | ------------------------------ |
 | outputs.tf    | Output like IPs, Addresses, etc  ||
 | providers.tf  | Provider-Specific (Cred.)        ||
 | resources.tf  | for small projects               ||
@@ -832,8 +831,10 @@ refactor the solution with
   - `region` to 'eu-west-1'
   - `instance_type` to t2.micro
   - `node_count` to 1
+- test the file with 
+`terraform apply --var-file=...`
 
-![bg right 100%](assets/programming-code.jpg)
+![bg right:40% 100%](assets/programming-code.jpg)
 
 ---
 
@@ -1125,6 +1126,59 @@ resource "aws_security_group" "map" {
 
 ---
 
+# using a more then one Tag for each Instance
+
+```json
+variable "common_tags" {
+  type = map(string)
+  default = {
+    Department  = "Global Infrastructure Services"
+    Team        = "EMEA Delivery"
+    CostCenter  = "12345"
+    Application = "Intranet-Portal"
+  }
+}
+```
+
+---
+
+# use of a map with common tags
+
+#### use it just as a variable:
+
+```json
+resource "aws_instance" "app_server" {
+  ...omitted output...
+  tags = var.common_tags
+  ...omitted output...
+}
+```
+
+#### use it with the merge()-function
+
+```json
+  tags = merge(var.common_tags, {
+    Name = "AppSrv-${count.index + 1}"
+    }
+  )
+```
+
+---
+
+# LAB
+
+## use some common_tags
+
+- create a map-variable
+  `var.common_tags`
+- set the tags:
+  CostCenter = "12345"
+  DeployedBy = "Terraform"
+  SLA = "High"
+
+![bg right 100%](assets/programming-code.jpg)
+
+---
 # Datasources
 
 Data sources allow Terraform use information defined outside of Terraform.
