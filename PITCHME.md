@@ -296,15 +296,15 @@ resource "aws_instance" "app_server" {
 
 # Terraform _Standard_ Filelayout
 
-| File / Folder | Purpose                          |
-| ------------- | -------------------------------- |
-| main.tf       | Terraform Config and Constraints |
-| outputs.tf    | Output like IPs, Addresses, etc  |
-| providers.tf  | Provider-Specific (Cred.)        |
-| resources.tf  | for small projects               |
-| variables.tf  | place for specifying variables   |
-| README.md     | Documentation                    |
-| env           | folder place for tfvar-files     |
+| Elastic Network Interface | Elastic Network Adapter |Elastic Fabric Adapter
+| ------------- | ------------------------------ | --- |
+| Up to 10 Gbps | Up to 100 Gbps |Up to 400 Gbps |
+| outputs.tf    | Output like IPs, Addresses, etc  ||
+| providers.tf  | Provider-Specific (Cred.)        ||
+| resources.tf  | for small projects               ||
+| variables.tf  | place for specifying variables   ||
+| README.md     | Documentation                    ||
+| env           | folder place for tfvar-files     ||
 
 ---
 
@@ -696,7 +696,7 @@ resource "aws_instance" "app_server" {
 using a validation block nested within the variable block
 
 ```json
-variable "image-id" {
+variable "image_id" {
   type        = string
   description = "The id of the machine image (AMI) to use for the server."
 
