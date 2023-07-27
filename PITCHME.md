@@ -25,7 +25,7 @@ footer: '(c) 2022 - Terraform with AWS V 1.1.9'
 
 ### Infrastructure as Code
 
-**Version:** 1.1.9
+**Version:** 1.1.9a
 
 ---
 
