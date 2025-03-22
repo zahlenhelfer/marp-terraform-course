@@ -9,7 +9,7 @@ keywords: terraform,aws,iac
 #image: https://marp.app/og-image.jpg
 paginate: true
 #backgroundImage: url('assets/hero-background.jpg')
-footer: '(c) 2022 - Terraform with AWS V 1.2.0'
+footer: '(c) 2024 - Terraform with AWS V 1.2.1'
 #theme: uncover
 #color: #000
 #colorSecondary: #333
@@ -25,7 +25,7 @@ footer: '(c) 2022 - Terraform with AWS V 1.2.0'
 
 ### Infrastructure as Code
 
-**Version:** 1.2.0
+**Version:** 1.2.1
 
 ---
 
@@ -40,26 +40,24 @@ We have three days to cover the agenda.
 - Module 05 - EC2 with Terraform
 - Module 06 - From static to dynamic deployment
 - Module 07 - Dependencies and Terraform
-- Module 08 - S3 Storage and Terraform
 
 ---
 
 # Course Details 2/2
 
+- Module 08 - S3 Storage and Terraform
 - Module 09 - Terraform an Modules
 - Module 10 - Terraform and Elastic Load Balancing
 - Module 11 - Terraform and Scaling
 - Module 12 - Terraform and RDS
-- Module 13 - Terraform and Serverless
-- Module 14 - EKS with Terraform
-- Module 15 - Remote State / Workspaces
-- Module 16 - Terraform and Route53
+- Module 13 - Remote State / Workspaces
+- Module 14 - Terraform and Route53
 
 ---
 
 # Goals of the Course
 
-- use Terrafrom to deploy  Infrastructure in AWS
+- use Terrafrom to deploy Infrastructure in AWS
 - getting a refresh on AWS services
 - Hands-On Time
 
