@@ -22,7 +22,7 @@ jobs:
       - name: Convert Markdown into HTML and PDF
         uses: ./
         with:
-          config-file: ./config/.marprc.yml
+          config-file: ./.marprc.yml
 
       - name: Uploade artifact
         uses: actions/upload-pages-artifact@v3
