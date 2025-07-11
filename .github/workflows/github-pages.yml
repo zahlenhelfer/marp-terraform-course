@@ -25,7 +25,7 @@ jobs:
       - name: Convert Markdown into HTML and PDF
         uses: KoharaKazuya/marp-cli-action@v4
         with:
-          config-file: ./.marprc.yml
+          config-file: marp-config/.marprc.yml
 
       - name: Uploade artifact
         uses: actions/upload-pages-artifact@v3
