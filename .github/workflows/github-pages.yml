@@ -31,14 +31,14 @@ jobs:
       - name: Marp Build (README)
         uses: docker://marpteam/marp-cli:v4.2.0
         with:
-          args: presentations/PITCHME.md -o build/index.html
+          args: docs/PITCHME.md -o build/index.html
         env:
           MARP_USER: root:root
 
       - name: Marp Build (README.pdf)
         uses: docker://marpteam/marp-cli:v4.2.0
         with:
-          args: presentations/PITCHME.md --allow-local-files -o build/PITCHME.pdf
+          args: docs/PITCHME.md --allow-local-files -o build/PITCHME.pdf
         env:
           MARP_USER: root:root
 
