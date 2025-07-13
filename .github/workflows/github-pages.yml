@@ -22,6 +22,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Ensure build dir exists
+        run: mkdir -p build
+
+      - name: Copy images directory (if exists)
+        run: if [[ -d assets ]]; then cp -R assets build/assets; fi      
+
       - name: Marp Build (README)
         uses: docker://marpteam/marp-cli:v4.2.0
         with:
