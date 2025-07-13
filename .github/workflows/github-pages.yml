@@ -31,20 +31,16 @@ jobs:
       - name: Marp Build (README)
         uses: docker://marpteam/marp-cli:v4.2.0
         with:
-          args: docs/PITCHME.md -o build/index.html
+          args: PITCHME.md -o build/index.html
         env:
           MARP_USER: root:root
 
       - name: Marp Build (README.pdf)
         uses: docker://marpteam/marp-cli:v4.2.0
         with:
-          args: docs/PITCHME.md --allow-local-files -o build/PITCHME.pdf
+          args: PITCHME.md --allow-local-files -o build/PITCHME.pdf
         env:
           MARP_USER: root:root
-
-      - name: Check if docs folder exists
-        id: docs-folder-exists
-        run: bash -c "[[ -d docs ]] ; echo \"has_docs=\$?\" >> \"$GITHUB_OUTPUT\""
 
       - name: Marp Build (docs folder, if exists)
         if: steps.docs-folder-exists.outputs.has_docs == '0'
